@@ -144,5 +144,24 @@ class cmc:
 
         print(allHrefs)
 
-        
+        for href in allHrefs:
+
+            if self.etherscanDesc in href:
+                platfotm = self.ethereumDesc
+            elif self.bscscanDesc in href:
+                platfotm = self.binanceSmartChainDesc
+            else:
+                continue
+
+            contractToken = href.rsplit('/', 1)[-1]
+
+            tokens[platfotm] = contractToken
+
+        print(tokens)
+
+        tokens = {key: val for key, val in sorted(tokens.items(), key = lambda ele: ele[0])}
+
+        print(tokens)
+
+        return tokens
     

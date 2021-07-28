@@ -52,7 +52,8 @@ class cmc:
         self.datetimeDesc = "datetime"
         self.prevDatetimeDesc = "prevDatetime"
 
-        self.lastUpdatesDesc = "lastUpdated"
+        self.lastUpdatedDesc = "lastUpdated"
+        self.prevLastUpdatedDesc = "prevLastUpdated"
 
         self.bscscanDesc = "bscscan"
         self.etherscanDesc = "etherscan"
@@ -167,25 +168,69 @@ class cmc:
 
     def core(self):
 
-        with urllib.request.urlopen(self.allCoinMarketCapCoinsUrl) as url:
-            rawData = json.loads(url.read().decode())
+        while True:
 
-        for i, data in rawData.items():
-            for desc, listOfDicts in data.items():
+            while True:
+                try:
+                    with urllib.request.urlopen(self.allCoinMarketCapCoinsUrl) as url:
+                        rawData = json.loads(url.read().decode())
 
-                if desc.endswith(self.listDesc):
+                    break
+                except:
+                    time.sleep(self.delay)
 
-                    print(desc)
-                    
-                    df = pd.DataFrame(listOfDicts)
-                    df = df.drop(['tags', 'cmcRank', 'marketPairCount', 'lastUpdated', 'isAudited', 'platform', 'auditInfoList'], axis = 1)
-                    df = df.rename(columns = {self.nameDesc: self.symbolNameDesc})
+            for i, data in rawData.items():
+                for desc, listOfDicts in data.items():
 
-                    df[self.columnToExpand] = df[self.columnToExpand].apply(lambda cell: cell[0])
+                    if desc.endswith(self.listDesc):
 
-                    df = df.drop(self.columnToExpand, axis=1).join(pd.DataFrame(df[self.columnToExpand].values.tolist()))
+                        print(desc)
+                        
+                        df = pd.DataFrame(listOfDicts)
+                        df = df.drop(['tags', 'cmcRank', 'marketPairCount', 'lastUpdated', 'isAudited', 'platform', 'auditInfoList'], axis = 1)
+                        df = df.rename(columns = {self.nameDesc: self.symbolNameDesc})
 
-        for i, row in df.iterrows():
+                        df[self.columnToExpand] = df[self.columnToExpand].apply(lambda cell: cell[0])
 
-            if 1==1:
-                1
+                        df = df.drop(self.columnToExpand, axis=1).join(pd.DataFrame(df[self.columnToExpand].values.tolist()))
+
+            for i, row in df.iterrows():
+
+                # If "current" values are not set
+                if self.data.get(row[self.idDesc], {self.priceDesc: -1})[self.priceDesc] == -1:
+
+                    self.data.setdefault(row[self.idDesc], {})[self.priceDesc] = row[self.priceDesc]
+                    self.data[row[self.idDesc]][self.lastUpdatedDesc] = row[self.lastUpdatedDesc]
+                    self.data[row[self.idDesc]][self.symbolNameDesc] = row[self.symbolNameDesc]
+                    self.data[row[self.idDesc]][self.slugDesc] = row[self.slugDesc]
+
+                # If "current" values are not set
+                else:
+
+                    if self.data[row[self.idDesc]][self.lastUpdatedDesc] == row[self.lastUpdatedDesc]:
+                        continue
+
+                    self.data[row[self.idDesc]][self.prevPriceDesc] = self.data[row[self.idDesc]][self.priceDesc]
+                    self.data[row[self.idDesc]][self.prevLastUpdatedDesc] = self.data[row[self.idDesc]][self.lastUpdatedDesc]
+                    self.data[row[self.idDesc]][self.priceDesc] = row[self.priceDesc]
+                    self.data[row[self.idDesc]][self.lastUpdatedDesc] = row[self.lastUpdatedDesc]
+
+                    percengeDiffWoFormat = self.data[row[self.idDesc]][self.priceDesc] / self.data[row[self.idDesc]][self.prevPriceDesc]
+                    percentageDiff = formatPercentages(percengeDiffWoFormat)
+
+                    if percentageDiff >= self.gainTrigger:
+                        color = bcolors.OK
+                    elif percentageDiff <= self.loseTrigger:
+                        color = bcolors.ERR
+                    else:
+                        continue
+
+                    tokens = self.getTokens(cryptoSlug=self.data[row[self.idDesc]][self.slugDesc])
+
+                    key = list(tokens.keys())[0]
+                    contractToken = tokens[key]
+
+
+
+            time.sleep(self.delay)
+            

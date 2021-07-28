@@ -9,4 +9,4 @@ e = tC.cmc(
     delay=10
 )
 
-e.getTokens()
+e.core()

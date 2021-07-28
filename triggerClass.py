@@ -122,7 +122,7 @@ class cmc:
         service.quit()
 
     # Get crypto coin tokens by searching in coinmarketcap websites (not ideal)
-    def getTokens(self, cryptoSlug="dashsports"):
+    def getTokens(self, cryptoSlug):
 
         # Dict to be returned
         tokens = {}
@@ -159,8 +159,33 @@ class cmc:
 
         if len(tokens) > 0:
             tokens = {key: val for key, val in sorted(tokens.items(), key = lambda ele: ele[0])}
-            
+
             print(tokens)
 
         return tokens
     
+
+    def core(self):
+
+        with urllib.request.urlopen(self.allCoinMarketCapCoinsUrl) as url:
+            rawData = json.loads(url.read().decode())
+
+        for i, data in rawData.items():
+            for desc, listOfDicts in data.items():
+
+                if desc.endswith(self.listDesc):
+
+                    print(desc)
+                    
+                    df = pd.DataFrame(listOfDicts)
+                    df = df.drop(['tags', 'cmcRank', 'marketPairCount', 'lastUpdated', 'isAudited', 'platform', 'auditInfoList'], axis = 1)
+                    df = df.rename(columns = {self.nameDesc: self.symbolNameDesc})
+
+                    df[self.columnToExpand] = df[self.columnToExpand].apply(lambda cell: cell[0])
+
+                    df = df.drop(self.columnToExpand, axis=1).join(pd.DataFrame(df[self.columnToExpand].values.tolist()))
+
+        for i, row in df.iterrows():
+
+            if 1==1:
+                1

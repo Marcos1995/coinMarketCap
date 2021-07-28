@@ -122,9 +122,27 @@ class cmc:
         service.quit()
 
     # Get crypto coin tokens by searching in coinmarketcap websites (not ideal)
-    def getTokens(self, cryptoSlug):
+    def getTokens(self, cryptoSlug="dashsports"):
 
         # Dict to be returned
         tokens = {}
 
+        allHrefs = []
+
+        cryptoUrl = self.cryptoBaseUrl + cryptoSlug
+
+        html_page = urllib.request.urlopen(cryptoUrl)
+        soup = BeautifulSoup(html_page, "html.parser")
+
+        for link in soup.findAll('a'):
+            href = str(link.get('href'))
+
+            if self.tokenUrl in href:
+                allHrefs.append(href)
+
+        allHrefs = list(dict.fromkeys(allHrefs))
+
+        print(allHrefs)
+
+        
     

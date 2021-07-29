@@ -17,8 +17,8 @@ from email.mime.multipart import MIMEMultipart
 def formatPercentages(val):
     return round((val - 1) * 100, 4)
 
-def printInfo(val, color=""):
-    print(dt.datetime.now(), "//", color, val, bcolors.END)
+def printInfo(desc, color=""):
+    print(dt.datetime.now(), "//", color, desc, bcolors.END)
 
 class cmc:
 
@@ -151,12 +151,12 @@ class cmc:
         if len(tokens) > 0:
             tokens = {key: val for key, val in sorted(tokens.items(), key = lambda ele: ele[0])}
 
-            print(tokens)
-
         return tokens
     
 
     def core(self):
+
+        counter = 0
 
         while True:
 
@@ -173,8 +173,6 @@ class cmc:
                 for desc, listOfDicts in data.items():
 
                     if desc.endswith(self.listDesc):
-
-                        print(desc)
                         
                         df = pd.DataFrame(listOfDicts)
                         df = df.drop(['tags', 'cmcRank', 'marketPairCount', 'lastUpdated', 'isAudited', 'platform', 'auditInfoList'], axis = 1)
@@ -231,10 +229,13 @@ class cmc:
                         self.sendEmails(tradeAction=tradeAction, urlAction=urlAction, cryptoData=self.data[row[self.idDesc]], percentageDiff=percentageDiff, color=HTMLcolor, tokens=tokens)
                         printInfo(f"{tokens}", bcolors.WARN)
 
-                        exit()
-
                     printInfo(f"""{percentageDiff} % --- {tradeAction} la moneda {self.data[row[self.idDesc]][self.symbolNameDesc]} ({self.data[row[self.idDesc]][self.symbolDesc]})
                     Precio = {self.data[row[self.idDesc]][self.priceDesc]}, Antes = {self.data[row[self.idDesc]][self.prevPriceDesc]}""", color)
+
+            counter += 1
+
+            if counter % 100 == 0:
+                printInfo(f"--- For Loop: {counter}", bcolors.WARN)
 
             time.sleep(self.delay)
 

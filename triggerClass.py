@@ -69,8 +69,8 @@ class cmc:
         self.password = "NByu2298"
 
         self.recipientEmails = [
-            "marcospc1995@gmail.com"
-            #"fassboy61@gmail.com"
+            "marcospc1995@gmail.com",
+            "fassboy61@gmail.com"
         ]
 
         # self.uniswapConnection()

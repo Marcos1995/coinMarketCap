@@ -69,8 +69,8 @@ class cmc:
         self.password = "NByu2298"
 
         self.recipientEmails = [
-            "marcospc1995@gmail.com",
-            "fassboy61@gmail.com"
+            "marcospc1995@gmail.com"
+            #"fassboy61@gmail.com"
         ]
 
         # self.uniswapConnection()
@@ -111,16 +111,6 @@ class cmc:
         print(v)
         exit()
 
-
-    def sendEmail(self, subject, content):
-        ssl_context = ssl.create_default_context()
-        service = smtplib.SMTP_SSL(self.smtp_server_domain_name, self.port, context=ssl_context)
-        service.login(self.sender_mail, self.password)
-
-        for email in self.recipientEmails:
-            result = service.sendmail(self.sender_mail, email, f"Subject: {subject}\n{content}")
-
-        service.quit()
 
     # Get crypto coin tokens by searching in coinmarketcap websites (not ideal)
     def getTokens(self, cryptoSlug):
@@ -220,17 +210,62 @@ class cmc:
 
                     if percentageDiff >= self.gainTrigger:
                         color = bcolors.OK
+                        tradeAction = "Vender"
+                        urlAction = "inputCurrency"
                     elif percentageDiff <= self.loseTrigger:
                         color = bcolors.ERR
+                        tradeAction = "Comprar"
+                        urlAction = "outputCurrency"
                     else:
                         continue
 
                     tokens = self.getTokens(cryptoSlug=self.data[row[self.idDesc]][self.slugDesc])
 
-                    key = list(tokens.keys())[0]
-                    contractToken = tokens[key]
+                    if len(tokens) == 0:
+                        platformToBuy = ""
+                    
+                    else:
+                        self.sendEmails(tradeAction=tradeAction, urlAction=urlAction, cryptoData=self.data[row[self.idDesc]], percentageDiff=percentageDiff, color=color, tokens=tokens)
+                        printInfo(f"{tokens}", bcolors.WARN)
 
-
+                    printInfo(f"""{percentageDiff} % --- {tradeAction} la moneda {self.data[row[self.idDesc]][self.symbolNameDesc]} ({self.data[row[self.idDesc]][self.symbolDesc]})
+                    Precio = {self.data[row[self.idDesc]][self.priceDesc]}, Antes = {self.data[row[self.idDesc]][self.prevPriceDesc]}""", color)
 
             time.sleep(self.delay)
+
+
+    def sendEmails(self, tradeAction, urlAction, cryptoData, percentageDiff, color, tokens):
+        ssl_context = ssl.create_default_context()
+        service = smtplib.SMTP_SSL(self.smtp_server_domain_name, self.port, context=ssl_context)
+        service.login(self.sender_mail, self.password)
+
+        subject = f"{tradeAction} moneda {cryptoData[self.symbolNameDesc]} con alias {cryptoData[self.symbolDesc]}"
+
+        coinMarketCapUrl = self.cryptoBaseUrl + cryptoData[self.slugDesc]
+
+        content = f"""<h3 style="color: {color};">Ha variado {percentageDiff} %</h3>
+
+        <h3><a href="{coinMarketCapUrl}">Análisis en CoinMarketCap</a></h3>
+        """
+
+        for platform, token in tokens.items():
+
+            if platform == self.binanceSmartChainDesc:
+                baseUrl = self.pancakeSwapBaseUrl
+            elif platform == self.ethereumDesc:
+                baseUrl = self.uniswapBaseUrl
+            else:
+                continue
+
+            tradeUrl = baseUrl + urlAction + "=" + token
+
+            content += f"""<h3><a href="{tradeUrl}">Comprar en {platform} con token {token}</a></h3>
+            """
+            
+        content = MIMEText(content, "html")
+        
+        for email in self.recipientEmails:
+            result = service.sendmail(self.sender_mail, email, f"Subject: {subject}\n{content}")
+
+        service.quit()
             

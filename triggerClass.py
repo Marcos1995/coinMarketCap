@@ -192,6 +192,7 @@ class cmc:
                     self.data.setdefault(row[self.idDesc], {})[self.priceDesc] = row[self.priceDesc]
                     self.data[row[self.idDesc]][self.lastUpdatedDesc] = row[self.lastUpdatedDesc]
                     self.data[row[self.idDesc]][self.symbolNameDesc] = row[self.symbolNameDesc]
+                    self.data[row[self.idDesc]][self.symbolDesc] = row[self.symbolDesc]
                     self.data[row[self.idDesc]][self.slugDesc] = row[self.slugDesc]
 
                 # If "current" values are not set
@@ -210,10 +211,12 @@ class cmc:
 
                     if percentageDiff >= self.gainTrigger:
                         color = bcolors.OK
+                        HTMLcolor = "green"
                         tradeAction = "Vender"
                         urlAction = "inputCurrency"
                     elif percentageDiff <= self.loseTrigger:
                         color = bcolors.ERR
+                        HTMLcolor = "red"
                         tradeAction = "Comprar"
                         urlAction = "outputCurrency"
                     else:
@@ -225,8 +228,10 @@ class cmc:
                         platformToBuy = ""
                     
                     else:
-                        self.sendEmails(tradeAction=tradeAction, urlAction=urlAction, cryptoData=self.data[row[self.idDesc]], percentageDiff=percentageDiff, color=color, tokens=tokens)
+                        self.sendEmails(tradeAction=tradeAction, urlAction=urlAction, cryptoData=self.data[row[self.idDesc]], percentageDiff=percentageDiff, color=HTMLcolor, tokens=tokens)
                         printInfo(f"{tokens}", bcolors.WARN)
+
+                        exit()
 
                     printInfo(f"""{percentageDiff} % --- {tradeAction} la moneda {self.data[row[self.idDesc]][self.symbolNameDesc]} ({self.data[row[self.idDesc]][self.symbolDesc]})
                     Precio = {self.data[row[self.idDesc]][self.priceDesc]}, Antes = {self.data[row[self.idDesc]][self.prevPriceDesc]}""", color)
@@ -239,12 +244,14 @@ class cmc:
         service = smtplib.SMTP_SSL(self.smtp_server_domain_name, self.port, context=ssl_context)
         service.login(self.sender_mail, self.password)
 
+        # Set email subject
         subject = f"{tradeAction} moneda {cryptoData[self.symbolNameDesc]} con alias {cryptoData[self.symbolDesc]}"
 
+        # CoinMarketCap URL to see how the coin is going
         coinMarketCapUrl = self.cryptoBaseUrl + cryptoData[self.slugDesc]
 
-        content = f"""<h3 style="color: {color};">Ha variado {percentageDiff} %</h3>
-
+        # Start preparing the content of the email
+        content = f"""<h2 style="color: {color};">Ha variado {percentageDiff} %</h2>
         <h3><a href="{coinMarketCapUrl}">Análisis en CoinMarketCap</a></h3>
         """
 
@@ -257,6 +264,7 @@ class cmc:
             else:
                 continue
 
+            # Set URL to buy or sell coins
             tradeUrl = baseUrl + urlAction + "=" + token
 
             content += f"""<h3><a href="{tradeUrl}">Comprar en {platform} con token {token}</a></h3>
@@ -268,4 +276,4 @@ class cmc:
             result = service.sendmail(self.sender_mail, email, f"Subject: {subject}\n{content}")
 
         service.quit()
-            
+        

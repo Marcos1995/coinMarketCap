@@ -204,6 +204,10 @@ class cmc:
                     self.data[row[self.idDesc]][self.priceDesc] = row[self.priceDesc]
                     self.data[row[self.idDesc]][self.lastUpdatedDesc] = row[self.lastUpdatedDesc]
 
+                    # Skip if prev price was 0 to prevent "division by 0" error
+                    if self.data[row[self.idDesc]][self.prevPriceDesc] == 0:
+                        continue
+
                     percengeDiffWoFormat = self.data[row[self.idDesc]][self.priceDesc] / self.data[row[self.idDesc]][self.prevPriceDesc]
                     percentageDiff = formatPercentages(percengeDiffWoFormat)
 
@@ -234,7 +238,7 @@ class cmc:
 
             counter += 1
 
-            if counter % 100 == 0:
+            if counter % 10 == 0:
                 printInfo(f"--- For Loop: {counter}", bcolors.WARN)
 
             time.sleep(self.delay)
@@ -268,6 +272,7 @@ class cmc:
             # Set URL to buy or sell coins
             tradeUrl = baseUrl + urlAction + "=" + token
 
+            # Add trading links to buy or sell
             content += f"""<h3><a href="{tradeUrl}">Comprar en {platform} con token {token}</a></h3>
             """
             

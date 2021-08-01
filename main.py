@@ -9,5 +9,5 @@ e = tC.cmc(
     moveHistoryCsv="moveHistory.csv",
     delay=15
 )
-
+exit()
 e.core()

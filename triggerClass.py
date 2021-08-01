@@ -123,8 +123,14 @@ class cmc:
 
         cryptoUrl = self.cryptoBaseUrl + cryptoSlug
 
-        html_page = urllib.request.urlopen(cryptoUrl)
-        soup = BeautifulSoup(html_page, "html.parser")
+        while True:
+            try:
+                html_page = urllib.request.urlopen(cryptoUrl)
+                soup = BeautifulSoup(html_page, "html.parser")
+
+                break
+            except:
+                time.sleep(self.delay)
 
         for link in soup.findAll('a'):
             href = str(link.get('href'))
@@ -154,6 +160,12 @@ class cmc:
     
 
     def core(self):
+
+        # If file exists...
+        if os.path.exists(self.moveHistoryCsv):
+            writeHeaders = False
+        else:
+            writeHeaders = True
 
         counter = 0
 
@@ -203,8 +215,11 @@ class cmc:
                     self.data[row[self.idDesc]][self.priceDesc] = row[self.priceDesc]
                     self.data[row[self.idDesc]][self.lastUpdatedDesc] = row[self.lastUpdatedDesc]
 
+                    # Skip if current price is 0
+                    if self.data[row[self.idDesc]][self.priceDesc] == 0:
+                        continue
                     # Skip if prev price was 0 to prevent "division by 0" error
-                    if self.data[row[self.idDesc]][self.prevPriceDesc] == 0:
+                    elif self.data[row[self.idDesc]][self.prevPriceDesc] == 0:
                         prevPrice = 1
                     else:
                         prevPrice = self.data[row[self.idDesc]][self.prevPriceDesc]
@@ -225,19 +240,31 @@ class cmc:
                     else:
                         continue
 
+                    tempRow = {}
+
+                    tempRow["percentageDiff"] = percentageDiff
+
+                    for x, y in row.items():
+                        tempRow[x] = y
+
+                    tempDf = pd.DataFrame([tempRow])
+
+                    tempDf.to_csv(self.moveHistoryCsv, index=False, columns=list(tempDf), mode="a", header=writeHeaders)
+                    writeHeaders = False
+
                     tokens = self.getTokens(cryptoSlug=self.data[row[self.idDesc]][self.slugDesc])
 
                     if len(tokens) == 0:
-                        platformToBuy = ""
+                        tokensDesc = ""
                     
                     else:
                         if self.isSendEmails:
                             self.sendEmails(tradeAction=tradeAction, urlAction=urlAction, cryptoData=self.data[row[self.idDesc]], percentageDiff=percentageDiff, color=HTMLcolor, tokens=tokens)
-                        
-                        printInfo(f"{tokens}", bcolors.WARN)
+
+                        tokensDesc = f"// {tokens}"
 
                     printInfo(f"{percentageDiff} % --- {tradeAction} la moneda {self.data[row[self.idDesc]][self.symbolNameDesc]} ({self.data[row[self.idDesc]][self.symbolDesc]})"
-                    + f" // Precio = {self.data[row[self.idDesc]][self.priceDesc]} $, Antes = {self.data[row[self.idDesc]][self.prevPriceDesc]} $", color)
+                    + f" // Precio = {self.data[row[self.idDesc]][self.priceDesc]} $, Antes = {self.data[row[self.idDesc]][self.prevPriceDesc]} $ {tokensDesc}", color)
 
             counter += 1
 
@@ -268,7 +295,9 @@ class cmc:
 
         # Start preparing the content of the email
         content = f"""<h2 style="color: {color};">Ha variado {percentageDiff} %</h2>
-        <h3>Precio en dolares = {cryptoData[self.priceDesc]} // Antes = {cryptoData[self.prevPriceDesc]}</h3>
+        <h3>Precio en dolares:</h3>
+        <h3>Ahora = {cryptoData[self.priceDesc]}</h3>
+        <h3>Antes = {cryptoData[self.prevPriceDesc]}</h3>
         <h3><a href="{coinMarketCapUrl}">Análisis en CoinMarketCap</a></h3>
         """
 

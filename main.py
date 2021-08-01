@@ -3,8 +3,9 @@ import triggerClass as tC
 # -------------------------------------------------------------------------------------------
 
 e = tC.cmc(
-    gainTrigger=300,  # %
-    loseTrigger=-80,  # %
+    gainTrigger=100,  # %
+    loseTrigger=-90,  # %
+    isSendEmails=False,
     moveHistoryCsv="moveHistory.csv",
     delay=15
 )

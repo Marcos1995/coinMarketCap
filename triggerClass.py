@@ -22,10 +22,11 @@ def printInfo(desc, color=""):
 
 class cmc:
 
-    def __init__(self, gainTrigger, loseTrigger, moveHistoryCsv, delay):
+    def __init__(self, gainTrigger, loseTrigger, isSendEmails, moveHistoryCsv, delay):
 
         self.gainTrigger = gainTrigger
         self.loseTrigger = loseTrigger
+        self.isSendEmails = isSendEmails
         self.moveHistoryCsv = moveHistoryCsv
         self.delay = delay
 
@@ -133,8 +134,6 @@ class cmc:
 
         allHrefs = list(dict.fromkeys(allHrefs))
 
-        print(allHrefs)
-
         for href in allHrefs:
 
             if self.etherscanDesc in href:
@@ -206,9 +205,11 @@ class cmc:
 
                     # Skip if prev price was 0 to prevent "division by 0" error
                     if self.data[row[self.idDesc]][self.prevPriceDesc] == 0:
-                        continue
+                        prevPrice = 1
+                    else:
+                        prevPrice = self.data[row[self.idDesc]][self.prevPriceDesc]
 
-                    percengeDiffWoFormat = self.data[row[self.idDesc]][self.priceDesc] / self.data[row[self.idDesc]][self.prevPriceDesc]
+                    percengeDiffWoFormat = self.data[row[self.idDesc]][self.priceDesc] / prevPrice
                     percentageDiff = formatPercentages(percengeDiffWoFormat)
 
                     if percentageDiff >= self.gainTrigger:
@@ -230,24 +231,34 @@ class cmc:
                         platformToBuy = ""
                     
                     else:
-                        self.sendEmails(tradeAction=tradeAction, urlAction=urlAction, cryptoData=self.data[row[self.idDesc]], percentageDiff=percentageDiff, color=HTMLcolor, tokens=tokens)
+                        if self.isSendEmails:
+                            self.sendEmails(tradeAction=tradeAction, urlAction=urlAction, cryptoData=self.data[row[self.idDesc]], percentageDiff=percentageDiff, color=HTMLcolor, tokens=tokens)
+                        
                         printInfo(f"{tokens}", bcolors.WARN)
 
-                    printInfo(f"""{percentageDiff} % --- {tradeAction} la moneda {self.data[row[self.idDesc]][self.symbolNameDesc]} ({self.data[row[self.idDesc]][self.symbolDesc]})
-                    Precio = {self.data[row[self.idDesc]][self.priceDesc]}, Antes = {self.data[row[self.idDesc]][self.prevPriceDesc]}""", color)
+                    printInfo(f"{percentageDiff} % --- {tradeAction} la moneda {self.data[row[self.idDesc]][self.symbolNameDesc]} ({self.data[row[self.idDesc]][self.symbolDesc]})"
+                    + f" // Precio = {self.data[row[self.idDesc]][self.priceDesc]} $, Antes = {self.data[row[self.idDesc]][self.prevPriceDesc]} $", color)
 
             counter += 1
 
-            if counter % 10 == 0:
+            if counter % 100 == 0:
                 printInfo(f"--- For Loop: {counter}", bcolors.WARN)
 
             time.sleep(self.delay)
 
 
     def sendEmails(self, tradeAction, urlAction, cryptoData, percentageDiff, color, tokens):
-        ssl_context = ssl.create_default_context()
-        service = smtplib.SMTP_SSL(self.smtp_server_domain_name, self.port, context=ssl_context)
-        service.login(self.sender_mail, self.password)
+
+        while True:
+            try:
+                ssl_context = ssl.create_default_context()
+                service = smtplib.SMTP_SSL(self.smtp_server_domain_name, self.port, context=ssl_context)
+                service.login(self.sender_mail, self.password)
+
+                break
+
+            except:
+                time.sleep(self.delay)
 
         # Set email subject
         subject = f"{tradeAction} moneda {cryptoData[self.symbolNameDesc]} con alias {cryptoData[self.symbolDesc]}"
@@ -257,6 +268,7 @@ class cmc:
 
         # Start preparing the content of the email
         content = f"""<h2 style="color: {color};">Ha variado {percentageDiff} %</h2>
+        <h3>Precio en dolares = {cryptoData[self.priceDesc]} // Antes = {cryptoData[self.prevPriceDesc]}</h3>
         <h3><a href="{coinMarketCapUrl}">Análisis en CoinMarketCap</a></h3>
         """
 
@@ -279,7 +291,14 @@ class cmc:
         content = MIMEText(content, "html")
         
         for email in self.recipientEmails:
-            result = service.sendmail(self.sender_mail, email, f"Subject: {subject}\n{content}")
+
+            while True:
+                try:
+                    result = service.sendmail(self.sender_mail, email, f"Subject: {subject}\n{content}")
+                    break
+
+                except:
+                    time.sleep(self.delay)
 
         service.quit()
         

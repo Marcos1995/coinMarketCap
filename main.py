@@ -7,7 +7,7 @@ e = tC.cmc(
     loseTrigger=-90,  # %
     isSendEmails=False,
     moveHistoryCsv="moveHistory.csv",
-    delay=15
+    delay=30
 )
 
 e.core()

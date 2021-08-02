@@ -11,6 +11,9 @@ from web3.auto import w3
 import smtplib, ssl
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from tempfile import NamedTemporaryFile
+import shutil
+import csv
 
 # ------------------------------------------------------------------------------------
 
@@ -57,6 +60,11 @@ class cmc:
 
         self.lastUpdatedDesc = "lastUpdated"
         self.prevLastUpdatedDesc = "prevLastUpdated"
+
+        self.percentageDiffDesc = "percentageDiff"
+        self.isSoldDesc = "isSold"
+
+        self.separator = ","
 
         self.bscscanDesc = "bscscan"
         self.etherscanDesc = "etherscan"
@@ -115,70 +123,28 @@ class cmc:
         exit()
 
 
-    # Get crypto coin tokens by searching in coinmarketcap websites (not ideal)
-    def getTokens(self, cryptoSlug):
-
-        # Dict to be returned
-        tokens = {}
-
-        allHrefs = []
-
-        cryptoUrl = self.cryptoBaseUrl + cryptoSlug
-
-        while True:
-            try:
-                html_page = urllib.request.urlopen(cryptoUrl)
-                soup = BeautifulSoup(html_page, "html.parser")
-
-                break
-            except:
-                time.sleep(self.delay)
-
-        for link in soup.findAll('a'):
-            href = str(link.get('href'))
-
-            if self.tokenUrl in href:
-                allHrefs.append(href)
-
-        allHrefs = list(dict.fromkeys(allHrefs))
-
-        for href in allHrefs:
-
-            if self.etherscanDesc in href:
-                platform = self.ethereumDesc
-            elif self.bscscanDesc in href:
-                platform = self.binanceSmartChainDesc
-            else:
-                continue
-
-            contractToken = href.rsplit('/', 1)[-1]
-
-            tokens[platform] = contractToken
-
-        if len(tokens) > 0:
-            tokens = {key: val for key, val in sorted(tokens.items(), key = lambda ele: ele[0])}
-
-        return tokens
-    
-
     def core(self):
 
         # Instantiate list
         csvSymbolsNotSold = []
 
-        # If file exists...
-        if os.path.exists(self.moveHistoryCsv):
-            csvSymbolsNotSold = self.getCsvSymbolsNotSold()
-            writeHeaders = False
-        else:
-            writeHeaders = True
-
         counter = 0
 
         while True:
 
+            # Get .csv symbols not sold
+            if os.path.exists(self.moveHistoryCsv):
+                csvSymbolsNotSold = self.getCsvSymbolsNotSold()
+                # print(csvSymbolsNotSold)
+                writeHeaders = False
+            else:
+                writeHeaders = True
+                # printInfo(f"No existe el fichero {self.moveHistoryCsv}", bcolors.WARN)
+
+            # Get API data
             df = self.getData()
 
+            # For each dataframe row
             for i, row in df.iterrows():
 
                 # If "current" values are not set
@@ -207,33 +173,66 @@ class cmc:
                     else:
                         prevPrice = self.data[row[self.idDesc]][self.prevPriceDesc]
 
+                    # Calculate diff percentage
                     percengeDiffWoFormat = self.data[row[self.idDesc]][self.priceDesc] / prevPrice
                     percentageDiff = formatPercentages(percengeDiffWoFormat)
 
-                    if percentageDiff >= self.gainTrigger:
+                    # If we should buy or sell a crypto
+                    if percentageDiff >= self.gainTrigger and row[self.idDesc] in csvSymbolsNotSold: # sell
+
                         color = bcolors.OK
                         HTMLcolor = "green"
                         tradeAction = "Vender"
                         urlAction = "inputCurrency"
-                    elif percentageDiff <= self.loseTrigger:
+
+                        # ------------------------------------------------------------------
+
+                        # Update .csv setting the new cells value
+                        tempfile = NamedTemporaryFile(mode='w', delete=False)
+
+                        df = pd.read_csv(self.moveHistoryCsv, sep=self.separator)
+
+                        with open(self.moveHistoryCsv, 'r', newline='') as csvfile, tempfile:
+                            reader = csv.DictReader(csvfile, fieldnames=list(df), delimiter=self.separator)
+                            writer = csv.DictWriter(tempfile, fieldnames=list(df), delimiter=self.separator, lineterminator='\n')
+                            for r in reader:
+
+                                if r[self.symbolDesc] == self.symbolDesc:
+                                    writer.writerow(r)
+                                    continue
+
+                                if int(r[self.idDesc]) == int(row[self.idDesc]) and int(r[self.isSoldDesc]) == 0:
+                                    r[self.isSoldDesc] = 1
+
+                                writer.writerow(r)
+
+                        shutil.move(tempfile.name, self.moveHistoryCsv)
+
+
+                    elif percentageDiff <= self.loseTrigger and row[self.idDesc] not in csvSymbolsNotSold: # buy
+
                         color = bcolors.ERR
                         HTMLcolor = "red"
                         tradeAction = "Comprar"
                         urlAction = "outputCurrency"
-                    else:
+
+                        # -------------------------------------------------------------------
+
+                        # Prepare data to insert in .csv file
+                        tempRow = {}
+                        tempRow[self.percentageDiffDesc] = percentageDiff
+                        tempRow[self.isSoldDesc] = 0
+
+                        for x, y in row.items():
+                            tempRow[x] = y
+
+                        tempDf = pd.DataFrame([tempRow])
+
+                        tempDf.to_csv(self.moveHistoryCsv, index=False, columns=list(tempDf), mode="a", header=writeHeaders)
+                        writeHeaders = False
+
+                    else: # Nothing to do, so let's continue with the other coin
                         continue
-
-                    tempRow = {}
-
-                    tempRow["percentageDiff"] = percentageDiff
-
-                    for x, y in row.items():
-                        tempRow[x] = y
-
-                    tempDf = pd.DataFrame([tempRow])
-
-                    tempDf.to_csv(self.moveHistoryCsv, index=False, columns=list(tempDf), mode="a", header=writeHeaders)
-                    writeHeaders = False
 
                     tokens = self.getTokens(cryptoSlug=self.data[row[self.idDesc]][self.slugDesc])
 
@@ -246,8 +245,8 @@ class cmc:
 
                         tokensDesc = f"// {tokens}"
 
-                    printInfo(f"{percentageDiff} % --- {tradeAction} la moneda {self.data[row[self.idDesc]][self.symbolNameDesc]} ({self.data[row[self.idDesc]][self.symbolDesc]})"
-                    + f" // Precio = {self.data[row[self.idDesc]][self.priceDesc]} $, Antes = {self.data[row[self.idDesc]][self.prevPriceDesc]} $ {tokensDesc}", color)
+                    printInfo(f"{percentageDiff} % --- {tradeAction} la moneda {self.data[row[self.idDesc]][self.symbolNameDesc]} ({self.data[row[self.idDesc]][self.symbolDesc]}"
+                    + f" - {row[self.idDesc]}) // Precio = {self.data[row[self.idDesc]][self.priceDesc]} $, Antes = {self.data[row[self.idDesc]][self.prevPriceDesc]} $ {tokensDesc}", color)
 
             counter += 1
 
@@ -255,6 +254,30 @@ class cmc:
                 printInfo(f"--- For Loop: {counter}", bcolors.WARN)
 
             time.sleep(self.delay)
+
+
+    def getCsvSymbolsNotSold(self):
+
+        csvSymbolsNotSold = []
+
+        with open(self.moveHistoryCsv) as f:
+
+            lis = [line.split(sep=self.separator) for line in f]  # create a list of lists
+
+            for i, row in enumerate(lis):
+                if i == 0:
+                    idColumnIndex = row.index(self.idDesc)
+                    isSoldColumnIndex = row.index(self.isSoldDesc)
+                else:
+                    if int(row[isSoldColumnIndex]) == 0:
+                        csvSymbolsNotSold.append(int(row[idColumnIndex]))
+
+        csvSymbolsNotSold = list(dict.fromkeys(csvSymbolsNotSold))
+
+        if len(csvSymbolsNotSold) > 0:
+            print(csvSymbolsNotSold)
+
+        return csvSymbolsNotSold
 
 
     def getData(self):
@@ -266,6 +289,7 @@ class cmc:
 
                 break
             except:
+                printInfo("Error obteniendo datos en getData()", bcolors.ERRMSG)
                 time.sleep(self.delay)
 
         for i, data in rawData.items():
@@ -295,6 +319,7 @@ class cmc:
                 break
 
             except:
+                printInfo("Error obteniendo datos en sendEmails()", bcolors.ERRMSG)
                 time.sleep(self.delay)
 
         # Set email subject
@@ -337,7 +362,55 @@ class cmc:
                     break
 
                 except:
+                    printInfo("Error enviando email en sendEmails()", bcolors.ERRMSG)
                     time.sleep(self.delay)
 
         service.quit()
-        
+    
+
+    # Get crypto coin tokens by searching in coinmarketcap websites (not ideal)
+    def getTokens(self, cryptoSlug):
+
+        # Dict to be returned
+        tokens = {}
+
+        allHrefs = []
+
+        cryptoUrl = self.cryptoBaseUrl + cryptoSlug
+
+        while True:
+            try:
+                html_page = urllib.request.urlopen(cryptoUrl)
+                soup = BeautifulSoup(html_page, "html.parser")
+
+                break
+            except:
+                printInfo("Error obteniendo datos en getTokens()", bcolors.ERRMSG)
+                time.sleep(self.delay)
+
+        for link in soup.findAll('a'):
+            href = str(link.get('href'))
+
+            if self.tokenUrl in href:
+                allHrefs.append(href)
+
+        allHrefs = list(dict.fromkeys(allHrefs))
+
+        for href in allHrefs:
+
+            if self.etherscanDesc in href:
+                platform = self.ethereumDesc
+            elif self.bscscanDesc in href:
+                platform = self.binanceSmartChainDesc
+            else:
+                continue
+
+            contractToken = href.rsplit('/', 1)[-1]
+
+            tokens[platform] = contractToken
+
+        if len(tokens) > 0:
+            tokens = {key: val for key, val in sorted(tokens.items(), key = lambda ele: ele[0])}
+
+        return tokens
+    

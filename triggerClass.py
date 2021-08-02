@@ -50,6 +50,8 @@ class cmc:
         self.priceDesc = "price"
         self.prevPriceDesc = "prevPrice"
 
+        self.percentChange1hDesc = "percentChange1h"
+
         self.datetimeDesc = "datetime"
         self.prevDatetimeDesc = "prevDatetime"
 
@@ -161,8 +163,12 @@ class cmc:
 
     def core(self):
 
+        # Instantiate list
+        csvSymbolsNotSold = []
+
         # If file exists...
         if os.path.exists(self.moveHistoryCsv):
+            csvSymbolsNotSold = self.getCsvSymbolsNotSold()
             writeHeaders = False
         else:
             writeHeaders = True
@@ -171,43 +177,24 @@ class cmc:
 
         while True:
 
-            while True:
-                try:
-                    with urllib.request.urlopen(self.allCoinMarketCapCoinsUrl) as url:
-                        rawData = json.loads(url.read().decode())
-
-                    break
-                except:
-                    time.sleep(self.delay)
-
-            for i, data in rawData.items():
-                for desc, listOfDicts in data.items():
-
-                    if desc.endswith(self.listDesc):
-                        
-                        df = pd.DataFrame(listOfDicts)
-                        df = df.drop(['tags', 'cmcRank', 'marketPairCount', 'lastUpdated', 'isAudited', 'platform', 'auditInfoList'], axis = 1)
-                        df = df.rename(columns = {self.nameDesc: self.symbolNameDesc})
-
-                        df[self.columnToExpand] = df[self.columnToExpand].apply(lambda cell: cell[0])
-
-                        df = df.drop(self.columnToExpand, axis=1).join(pd.DataFrame(df[self.columnToExpand].values.tolist()))
+            df = self.getData()
 
             for i, row in df.iterrows():
 
                 # If "current" values are not set
                 if self.data.get(row[self.idDesc], {self.priceDesc: -1})[self.priceDesc] == -1:
 
-                    self.data.setdefault(row[self.idDesc], {})[self.priceDesc] = row[self.priceDesc]
-                    self.data[row[self.idDesc]][self.lastUpdatedDesc] = row[self.lastUpdatedDesc]
-                    self.data[row[self.idDesc]][self.symbolNameDesc] = row[self.symbolNameDesc]
+                    self.data.setdefault(row[self.idDesc], {})[self.symbolNameDesc] = row[self.symbolNameDesc]
                     self.data[row[self.idDesc]][self.symbolDesc] = row[self.symbolDesc]
                     self.data[row[self.idDesc]][self.slugDesc] = row[self.slugDesc]
+                    self.data[row[self.idDesc]][self.priceDesc] = row[self.priceDesc]
+                    self.data[row[self.idDesc]][self.lastUpdatedDesc] = row[self.lastUpdatedDesc]
+                    self.data[row[self.idDesc]][self.percentChange1hDesc] = row[self.percentChange1hDesc]
 
-                # If "current" values are not set
+                # If "previous" values are set
                 else:
 
-                    if self.data[row[self.idDesc]][self.lastUpdatedDesc] == row[self.lastUpdatedDesc]:
+                    if self.data[row[self.idDesc]][self.lastUpdatedDesc] == row[self.lastUpdatedDesc] or self.data[row[self.idDesc]][self.priceDesc] == 0:
                         continue
 
                     self.data[row[self.idDesc]][self.prevPriceDesc] = self.data[row[self.idDesc]][self.priceDesc]
@@ -215,11 +202,7 @@ class cmc:
                     self.data[row[self.idDesc]][self.priceDesc] = row[self.priceDesc]
                     self.data[row[self.idDesc]][self.lastUpdatedDesc] = row[self.lastUpdatedDesc]
 
-                    # Skip if current price is 0
-                    if self.data[row[self.idDesc]][self.priceDesc] == 0:
-                        continue
-                    # Skip if prev price was 0 to prevent "division by 0" error
-                    elif self.data[row[self.idDesc]][self.prevPriceDesc] == 0:
+                    if self.data[row[self.idDesc]][self.prevPriceDesc] == 0:
                         prevPrice = 1
                     else:
                         prevPrice = self.data[row[self.idDesc]][self.prevPriceDesc]
@@ -272,6 +255,33 @@ class cmc:
                 printInfo(f"--- For Loop: {counter}", bcolors.WARN)
 
             time.sleep(self.delay)
+
+
+    def getData(self):
+
+        while True:
+            try:
+                with urllib.request.urlopen(self.allCoinMarketCapCoinsUrl) as url:
+                    rawData = json.loads(url.read().decode())
+
+                break
+            except:
+                time.sleep(self.delay)
+
+        for i, data in rawData.items():
+            for desc, listOfDicts in data.items():
+
+                if desc.endswith(self.listDesc):
+                    
+                    df = pd.DataFrame(listOfDicts)
+                    df = df.drop(['tags', 'cmcRank', 'marketPairCount', 'lastUpdated', 'isAudited', 'platform', 'auditInfoList'], axis = 1)
+                    df = df.rename(columns = {self.nameDesc: self.symbolNameDesc})
+
+                    df[self.columnToExpand] = df[self.columnToExpand].apply(lambda cell: cell[0])
+
+                    df = df.drop(self.columnToExpand, axis=1).join(pd.DataFrame(df[self.columnToExpand].values.tolist()))
+
+        return df
 
 
     def sendEmails(self, tradeAction, urlAction, cryptoData, percentageDiff, color, tokens):

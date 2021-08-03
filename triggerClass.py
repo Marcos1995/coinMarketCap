@@ -33,7 +33,6 @@ class cmc:
         self.moveHistoryCsv = moveHistoryCsv
         self.delay = delay
 
-        self.columnToExpand = "quotes"
         self.typeDesc = "type"
         self.listDesc = "List"
 
@@ -50,6 +49,18 @@ class cmc:
         self.symbolDesc = "symbol"
         self.symbolNameDesc = "symbolName"
         self.slugDesc = "slug"
+        self.circulatingSupplyDesc = "circulatingSupply"
+        self.totalSupplyDesc = "totalSupply"
+        self.maxSupplyDesc = "maxSupply"
+        self.isActiveDesc = "isActive"
+        self.dateAddedDesc = "dateAdded"
+        self.columnToExpand = "quotes"
+
+        self.selectDataColumns = [
+            self.idDesc, self.nameDesc, self.symbolDesc, self.slugDesc, self.circulatingSupplyDesc,
+            self.totalSupplyDesc, self.maxSupplyDesc, self.isActiveDesc, self.dateAddedDesc, self.columnToExpand
+        ]
+
         self.priceDesc = "price"
         self.prevPriceDesc = "prevPrice"
 
@@ -62,6 +73,7 @@ class cmc:
         self.prevLastUpdatedDesc = "prevLastUpdated"
 
         self.percentageDiffDesc = "percentageDiff"
+        self.sellPercentageDiffDesc = "sellPercentageDiff"
         self.isSoldDesc = "isSold"
 
         self.separator = ","
@@ -167,6 +179,7 @@ class cmc:
                     self.data[row[self.idDesc]][self.prevLastUpdatedDesc] = self.data[row[self.idDesc]][self.lastUpdatedDesc]
                     self.data[row[self.idDesc]][self.priceDesc] = row[self.priceDesc]
                     self.data[row[self.idDesc]][self.lastUpdatedDesc] = row[self.lastUpdatedDesc]
+                    self.data[row[self.idDesc]][self.percentChange1hDesc] = row[self.percentChange1hDesc]
 
                     if self.data[row[self.idDesc]][self.prevPriceDesc] == 0:
                         prevPrice = 1
@@ -202,14 +215,14 @@ class cmc:
                                     continue
 
                                 if int(r[self.idDesc]) == int(row[self.idDesc]) and int(r[self.isSoldDesc]) == 0:
-                                    r[self.isSoldDesc] = 1
+                                    r[self.isSoldDesc], r[self.sellPercentageDiffDesc] = 1, percentageDiff
 
                                 writer.writerow(r)
 
                         shutil.move(tempfile.name, self.moveHistoryCsv)
 
 
-                    elif percentageDiff <= self.loseTrigger and row[self.idDesc] not in csvSymbolsNotSold: # buy
+                    elif percentageDiff <= self.loseTrigger and percentageDiff <= self.data[row[self.idDesc]][self.percentChange1hDesc] and row[self.idDesc] not in csvSymbolsNotSold: # buy
 
                         color = bcolors.ERR
                         HTMLcolor = "red"
@@ -221,6 +234,7 @@ class cmc:
                         # Prepare data to insert in .csv file
                         tempRow = {}
                         tempRow[self.percentageDiffDesc] = percentageDiff
+                        tempRow[self.sellPercentageDiffDesc] = None
                         tempRow[self.isSoldDesc] = 0
 
                         for x, y in row.items():
@@ -274,8 +288,8 @@ class cmc:
 
         csvSymbolsNotSold = list(dict.fromkeys(csvSymbolsNotSold))
 
-        if len(csvSymbolsNotSold) > 0:
-            print(csvSymbolsNotSold)
+        # if len(csvSymbolsNotSold) > 0:
+        #     print(csvSymbolsNotSold)
 
         return csvSymbolsNotSold
 
@@ -298,11 +312,18 @@ class cmc:
                 if desc.endswith(self.listDesc):
                     
                     df = pd.DataFrame(listOfDicts)
-                    df = df.drop(['tags', 'cmcRank', 'marketPairCount', 'lastUpdated', 'isAudited', 'platform', 'auditInfoList'], axis = 1)
+                    
+                    # Select few columns only
+                    df = df[self.selectDataColumns]
+                    
+                    # df = df.drop(['tags', 'cmcRank', 'marketPairCount', 'lastUpdated', 'isAudited', 'platform', 'auditInfoList'], axis = 1)
+
                     df = df.rename(columns = {self.nameDesc: self.symbolNameDesc})
 
+                    # Prepare column to expand
                     df[self.columnToExpand] = df[self.columnToExpand].apply(lambda cell: cell[0])
 
+                    # Expand column in df
                     df = df.drop(self.columnToExpand, axis=1).join(pd.DataFrame(df[self.columnToExpand].values.tolist()))
 
         return df
@@ -409,6 +430,7 @@ class cmc:
 
             tokens[platform] = contractToken
 
+        # Sort dict
         if len(tokens) > 0:
             tokens = {key: val for key, val in sorted(tokens.items(), key = lambda ele: ele[0])}
 

@@ -14,6 +14,8 @@ from email.mime.multipart import MIMEMultipart
 from tempfile import NamedTemporaryFile
 import shutil
 import csv
+from twilio.rest import Client
+import re
 
 # ------------------------------------------------------------------------------------
 
@@ -96,6 +98,15 @@ class cmc:
             "fassboy61@gmail.com"
         ]
 
+        # Twilio
+        self.account_sid = 'AC5acbac010999dc20b065ce163ddd0c2b' 
+        self.auth_token = '41342f1e7a6b6359c22607b8f28bdf13' 
+
+        self.mobileNumbers = [
+            "+34634553557",
+            "+34635453357"
+        ]
+
         # self.uniswapConnection()
 
 
@@ -172,7 +183,7 @@ class cmc:
                 # If "previous" values are set
                 else:
 
-                    if self.data[row[self.idDesc]][self.lastUpdatedDesc] == row[self.lastUpdatedDesc] or self.data[row[self.idDesc]][self.priceDesc] == 0:
+                    if self.data[row[self.idDesc]][self.lastUpdatedDesc] == row[self.lastUpdatedDesc] or (self.data[row[self.idDesc]][self.priceDesc] == 0 and row[self.priceDesc] == 0):
                         continue
 
                     self.data[row[self.idDesc]][self.prevPriceDesc] = self.data[row[self.idDesc]][self.priceDesc]
@@ -182,7 +193,7 @@ class cmc:
                     self.data[row[self.idDesc]][self.percentChange1hDesc] = row[self.percentChange1hDesc]
 
                     if self.data[row[self.idDesc]][self.prevPriceDesc] == 0:
-                        prevPrice = 1
+                        prevPrice = 1 / self.gainTrigger
                     else:
                         prevPrice = self.data[row[self.idDesc]][self.prevPriceDesc]
 
@@ -349,12 +360,21 @@ class cmc:
         # CoinMarketCap URL to see how the coin is going
         coinMarketCapUrl = self.cryptoBaseUrl + cryptoData[self.slugDesc]
 
+        coinMarketCapDesc = "Análisis en CoinMarketCap"
+
         # Start preparing the content of the email
-        content = f"""<h2 style="color: {color};">Ha variado {percentageDiff} %</h2>
+        content = f"""
+        <h2 style="color: {color};">Ha variado {percentageDiff} %</h2>
         <h3>Precio en dolares:</h3>
         <h3>Ahora = {cryptoData[self.priceDesc]}</h3>
         <h3>Antes = {cryptoData[self.prevPriceDesc]}</h3>
-        <h3><a href="{coinMarketCapUrl}">Análisis en CoinMarketCap</a></h3>
+        """
+
+        emailContent = content + f"""<h3><a href="{coinMarketCapUrl}">{coinMarketCapDesc}</a></h3>
+        """
+        whatsappContent = subject + content + f"""
+        {coinMarketCapDesc}
+        {coinMarketCapUrl}
         """
 
         for platform, token in tokens.items():
@@ -369,17 +389,33 @@ class cmc:
             # Set URL to buy or sell coins
             tradeUrl = baseUrl + urlAction + "=" + token
 
+            desc = f"{tradeAction} en {platform} con token {token}"
+
             # Add trading links to buy or sell
-            content += f"""<h3><a href="{tradeUrl}">Comprar en {platform} con token {token}</a></h3>
+            emailContent += f"""<h3><a href="{tradeUrl}">{desc}</a></h3>
             """
+
+            whatsappContent += f"""
+            {desc}
+            {tradeUrl}
+            """
+
+        print(emailContent)
             
-        content = MIMEText(content, "html")
+        emailContent = MIMEText(emailContent, "html")
+        whatsappContent = re.sub('<[^<]+?>', '', whatsappContent)
+        whatsappContent = re.sub('  +', '', whatsappContent)
+
+        print(whatsappContent)
+
+        # Send whatsapp message
+        self.sendWhatsapp(message=whatsappContent)
         
         for email in self.recipientEmails:
 
             while True:
                 try:
-                    result = service.sendmail(self.sender_mail, email, f"Subject: {subject}\n{content}")
+                    result = service.sendmail(self.sender_mail, email, f"Subject: {subject}\n{emailContent}")
                     break
 
                 except:
@@ -387,6 +423,8 @@ class cmc:
                     time.sleep(self.delay)
 
         service.quit()
+
+        exit()
     
 
     # Get crypto coin tokens by searching in coinmarketcap websites (not ideal)
@@ -436,3 +474,17 @@ class cmc:
 
         return tokens
     
+
+    def sendWhatsapp(self, message):
+
+        client = Client(self.account_sid, self.auth_token)
+
+        for number in self.mobileNumbers:
+        
+            message = client.messages.create( 
+                                        from_='whatsapp:+14155238886',  
+                                        body=message,      
+                                        to='whatsapp:' + number 
+                                    ) 
+        
+            print(message.sid)

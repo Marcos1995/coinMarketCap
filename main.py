@@ -4,10 +4,11 @@ import triggerClass as tC
 
 e = tC.cmc(
     gainTrigger=100,  # %
-    loseTrigger=-90,  # %
-    isSendEmails=True,
+    loseTrigger=-99,  # %
+    sendNotifications=True,
     moveHistoryCsv="moveHistory.csv",
     delay=30
 )
 
-e.core()
+# e.core()
+e.buyToken()

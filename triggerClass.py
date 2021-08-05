@@ -16,7 +16,6 @@ import csv
 from twilio.rest import Client
 import re
 from web3 import Web3
-import config
 import time
 
 # ------------------------------------------------------------------------------------
@@ -26,6 +25,12 @@ def formatPercentages(val):
 
 def printInfo(desc, color=""):
     print(dt.datetime.now(), "//", color, desc, bcolors.END)
+
+def getPrivateKey():
+    with open("/home/pi/Documents/config.txt") as mytxt:
+        for line in mytxt:
+            return line
+
 
 class cmc:
 
@@ -122,7 +127,9 @@ class cmc:
         self.wbnbContract = "0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c"
 
         self.senderAddress = "0xa9eC6E2129267f01a2E772E208F8b0Ed802748D0"
-        self.privateKey = "4ce99c4c447f8967b025dfa603a68427b9e79fb7879b99cd4163a8500f6d9baa"
+        self.privateKey = getPrivateKey()
+
+        print(self.privateKey)
 
         # self.uniswapConnection()
 
@@ -614,7 +621,7 @@ class cmc:
                     'nonce': web3.eth.get_transaction_count(sender_address),
                     })
 
-        signed_txn = web3.eth.account.sign_transaction(approve, private_key=config.private)
+        signed_txn = web3.eth.account.sign_transaction(approve, private_key=self.privateKey)
         tx_token = web3.eth.send_raw_transaction(signed_txn.rawTransaction)
         print("Approved: " + web3.toHex(tx_token))
 
@@ -635,6 +642,6 @@ class cmc:
                     'nonce': web3.eth.get_transaction_count(sender_address),
                     })
             
-        signed_txn = web3.eth.account.sign_transaction(pancakeswap2_txn, private_key=config.private)
+        signed_txn = web3.eth.account.sign_transaction(pancakeswap2_txn, private_key=self.privateKey)
         tx_token = web3.eth.send_raw_transaction(signed_txn.rawTransaction)
         print(f"Sold {symbol}: " + web3.toHex(tx_token))

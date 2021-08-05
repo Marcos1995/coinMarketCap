@@ -11,5 +11,4 @@ e = tC.cmc(
     delay=30
 )
 
-# e.core()
-e.sellToken()
+e.core()

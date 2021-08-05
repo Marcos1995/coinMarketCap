@@ -291,8 +291,8 @@ class cmc:
                         tokensDesc = ""
                     
                     else:
-                        if not self.isSimulation:
 
+                        if not self.isSimulation:
                             token = tokens[self.binanceSmartChainDesc]
 
                             print(token)
@@ -529,128 +529,140 @@ class cmc:
 
         while True:
 
-            web3 = Web3(Web3.HTTPProvider(self.bsc))
+            try:
 
-            print(web3.isConnected())
-            
-            balance = web3.eth.get_balance(self.senderAddress)
-            humanReadable = web3.fromWei(balance,'ether')
+                web3 = Web3(Web3.HTTPProvider(self.bsc))
 
-            printInfo(f"BNB amount: {humanReadable}", bcolors.WARN)
-            
-            #Contract Address of Token we want to buy
-            tokenToBuy = web3.toChecksumAddress(token)        # web3.toChecksumAddress("0x6615a63c260be84974166a5eddff223ce292cf3d")
-            spend = web3.toChecksumAddress(self.wbnbContract) # wbnb contract
-            
-            #Setup the PancakeSwap contract
-            contract = web3.eth.contract(address=self.panRouterContractAddress, abi=self.panabi)
-
-            nonce = web3.eth.get_transaction_count(self.senderAddress)
-            
-            start = time.time()
-
-            """
-            print(tokenToBuy)
-            print(spend)
-            print(contract)
-            print(nonce)
-            print(start)
-            """
-
-            pancakeswap2_txn = contract.functions.swapExactETHForTokensSupportingFeeOnTransferTokens( # swapExactETHForTokens
-            0, # set to 0, or specify minimum amount of tokeny you want to receive - consider decimals!!!
-            [spend,tokenToBuy],
-            self.senderAddress,
-            (int(time.time()) + 1000000)
-            ).buildTransaction({
-            'from': self.senderAddress,
-            'value': web3.toWei(self.bnbAmountToBuy,'ether'), # This is the Token(BNB) amount you want to Swap from
-            'gas': 250000,
-            'gasPrice': web3.toWei('5','gwei'),
-            'nonce': nonce,
-            })
+                print(web3.isConnected())
                 
-            signed_txn = web3.eth.account.sign_transaction(pancakeswap2_txn, private_key=self.privateKey)
-            tx_token = web3.eth.send_raw_transaction(signed_txn.rawTransaction)
+                balance = web3.eth.get_balance(self.senderAddress)
+                humanReadable = web3.fromWei(balance,'ether')
 
-            print(web3.toHex(tx_token))
+                printInfo(f"BNB amount: {humanReadable}", bcolors.WARN)
+                
+                #Contract Address of Token we want to buy
+                tokenToBuy = web3.toChecksumAddress(token)        # web3.toChecksumAddress("0x6615a63c260be84974166a5eddff223ce292cf3d")
+                spend = web3.toChecksumAddress(self.wbnbContract) # wbnb contract
+                
+                #Setup the PancakeSwap contract
+                contract = web3.eth.contract(address=self.panRouterContractAddress, abi=self.panabi)
 
-            balance = web3.eth.get_balance(self.senderAddress)
-            humanReadable = web3.fromWei(balance,'ether')
+                nonce = web3.eth.get_transaction_count(self.senderAddress)
+                
+                start = time.time()
 
-            break
+                """
+                print(tokenToBuy)
+                print(spend)
+                print(contract)
+                print(nonce)
+                print(start)
+                """
+
+                pancakeswap2_txn = contract.functions.swapExactETHForTokensSupportingFeeOnTransferTokens( # swapExactETHForTokens
+                0, # set to 0, or specify minimum amount of tokeny you want to receive - consider decimals!!!
+                [spend,tokenToBuy],
+                self.senderAddress,
+                (int(time.time()) + 1000000)
+                ).buildTransaction({
+                'from': self.senderAddress,
+                'value': web3.toWei(self.bnbAmountToBuy,'ether'), # This is the Token(BNB) amount you want to Swap from
+                'gas': 250000,
+                'gasPrice': web3.toWei('5','gwei'),
+                'nonce': nonce,
+                })
+                    
+                signed_txn = web3.eth.account.sign_transaction(pancakeswap2_txn, private_key=self.privateKey)
+                tx_token = web3.eth.send_raw_transaction(signed_txn.rawTransaction)
+
+                print(web3.toHex(tx_token))
+
+                balance = web3.eth.get_balance(self.senderAddress)
+                humanReadable = web3.fromWei(balance,'ether')
+
+                break
+
+            except:
+                printInfo("Error en buyToken()", bcolors.ERRMSG)
+                time.sleep(self.delay)
 
 
     def sellToken(self, token):
 
         while True:
 
-            web3 = Web3(Web3.HTTPProvider(self.bsc))
+            try:
 
-            print(web3.isConnected())
+                web3 = Web3(Web3.HTTPProvider(self.bsc))
 
-            sender_address = self.senderAddress #TokenAddress of holder
-            spend = web3.toChecksumAddress(self.wbnbContract)  #WBNB Address
+                print(web3.isConnected())
+
+                sender_address = self.senderAddress #TokenAddress of holder
+                spend = web3.toChecksumAddress(self.wbnbContract)  #WBNB Address
 
 
-            #Get BNB Balance
-            balance = web3.eth.get_balance(sender_address)
-            humanReadable = web3.fromWei(balance,'ether')
+                #Get BNB Balance
+                balance = web3.eth.get_balance(sender_address)
+                humanReadable = web3.fromWei(balance,'ether')
 
-            printInfo(f"BNB amount: {humanReadable}", bcolors.WARN)
-            
-            #Contract id is the new token we are swaping to
-            #contract_id = web3.toChecksumAddress("0xc9849e6fdb743d08faee3e34dd2d1bc69ea11a51")
-            contract_id = web3.toChecksumAddress(token)
-            
-            #Setup the PancakeSwap contract
-            contract = web3.eth.contract(address=self.panRouterContractAddress, abi=self.panabi)
-
-            #Create token Instance for Token
-            sellTokenContract = web3.eth.contract(contract_id, abi=self.sellAbi)
-
-            #Get Token Balance
-            balance = sellTokenContract.functions.balanceOf(sender_address).call()
-            symbol = sellTokenContract.functions.symbol().call()
-            readable = web3.fromWei(balance,'ether')
-            print("Balance: " + str(readable) + " " + symbol)
-
-            #Enter amount of token to sell
-            tokenValue = web3.toWei(readable, 'ether')
-
-            #Approve Token before Selling
-            tokenValue2 = web3.fromWei(tokenValue, 'ether')
-            start = time.time()
-            approve = sellTokenContract.functions.approve(self.panRouterContractAddress, balance).buildTransaction({
-                        'from': sender_address,
-                        'gasPrice': web3.toWei('5','gwei'),
-                        'nonce': web3.eth.get_transaction_count(sender_address),
-                        })
-
-            signed_txn = web3.eth.account.sign_transaction(approve, private_key=self.privateKey)
-            tx_token = web3.eth.send_raw_transaction(signed_txn.rawTransaction)
-            print("Approved: " + web3.toHex(tx_token))
-
-            # Wait after approve 10 seconds before sending transaction
-            time.sleep(10)
-
-            print(f"Swapping {tokenValue2} {symbol} for BNB")
-            # Swaping exact Token for ETH 
-
-            pancakeswap2_txn = contract.functions.swapExactTokensForETHSupportingFeeOnTransferTokens( # swapExactTokensForETH
-                        tokenValue ,0, 
-                        [contract_id, spend],
-                        sender_address,
-                        (int(time.time()) + 1000000)
-
-                        ).buildTransaction({
-                        'from': sender_address,
-                        'gasPrice': web3.toWei('5','gwei'),
-                        'nonce': web3.eth.get_transaction_count(sender_address),
-                        })
+                printInfo(f"BNB amount: {humanReadable}", bcolors.WARN)
                 
-            signed_txn = web3.eth.account.sign_transaction(pancakeswap2_txn, private_key=self.privateKey)
-            tx_token = web3.eth.send_raw_transaction(signed_txn.rawTransaction)
-            print(f"Sold {symbol}: " + web3.toHex(tx_token))
+                #Contract id is the new token we are swaping to
+                #contract_id = web3.toChecksumAddress("0xc9849e6fdb743d08faee3e34dd2d1bc69ea11a51")
+                contract_id = web3.toChecksumAddress(token)
+                
+                #Setup the PancakeSwap contract
+                contract = web3.eth.contract(address=self.panRouterContractAddress, abi=self.panabi)
 
-            break
+                #Create token Instance for Token
+                sellTokenContract = web3.eth.contract(contract_id, abi=self.sellAbi)
+
+                #Get Token Balance
+                balance = sellTokenContract.functions.balanceOf(sender_address).call()
+                symbol = sellTokenContract.functions.symbol().call()
+                readable = web3.fromWei(balance,'ether')
+                print("Balance: " + str(readable) + " " + symbol)
+
+                #Enter amount of token to sell
+                tokenValue = web3.toWei(readable, 'ether')
+
+                #Approve Token before Selling
+                tokenValue2 = web3.fromWei(tokenValue, 'ether')
+                start = time.time()
+                approve = sellTokenContract.functions.approve(self.panRouterContractAddress, balance).buildTransaction({
+                            'from': sender_address,
+                            'gasPrice': web3.toWei('5','gwei'),
+                            'nonce': web3.eth.get_transaction_count(sender_address),
+                            })
+
+                signed_txn = web3.eth.account.sign_transaction(approve, private_key=self.privateKey)
+                tx_token = web3.eth.send_raw_transaction(signed_txn.rawTransaction)
+                print("Approved: " + web3.toHex(tx_token))
+
+                # Wait after approve 10 seconds before sending transaction
+                time.sleep(10)
+
+                print(f"Swapping {tokenValue2} {symbol} for BNB")
+                # Swaping exact Token for ETH 
+
+                pancakeswap2_txn = contract.functions.swapExactTokensForETHSupportingFeeOnTransferTokens( # swapExactTokensForETH
+                            tokenValue ,0, 
+                            [contract_id, spend],
+                            sender_address,
+                            (int(time.time()) + 1000000)
+
+                            ).buildTransaction({
+                            'from': sender_address,
+                            'gasPrice': web3.toWei('5','gwei'),
+                            'nonce': web3.eth.get_transaction_count(sender_address),
+                            })
+                    
+                signed_txn = web3.eth.account.sign_transaction(pancakeswap2_txn, private_key=self.privateKey)
+                tx_token = web3.eth.send_raw_transaction(signed_txn.rawTransaction)
+                print(f"Sold {symbol}: " + web3.toHex(tx_token))
+
+                break
+
+            except:
+                printInfo("Error en sellToken()", bcolors.ERRMSG)
+                time.sleep(self.delay)

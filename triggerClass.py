@@ -34,10 +34,10 @@ def getPrivateKey():
 
 class cmc:
 
-    def __init__(self, sellTrigger, buyTrigger, sendNotifications, isSimulation, moveHistoryCsv, delay):
+    def __init__(self, buyTrigger, sellTrigger, sendNotifications, isSimulation, moveHistoryCsv, delay):
 
-        self.sellTrigger = sellTrigger
         self.buyTrigger = buyTrigger
+        self.sellTrigger = sellTrigger
         self.sendNotifications = sendNotifications
         self.isSimulation = isSimulation
         self.moveHistoryCsv = moveHistoryCsv
@@ -132,10 +132,6 @@ class cmc:
 
         self.senderAddress = "0xa9eC6E2129267f01a2E772E208F8b0Ed802748D0"
         self.privateKey = getPrivateKey()
-
-        print(self.privateKey)
-
-        # self.uniswapConnection()
 
 
     def uniswapConnection(self):
@@ -297,6 +293,8 @@ class cmc:
 
                             print(token)
 
+                            exit()
+
                             if isToBuy:
                                 self.buyToken(token=token)
                             else:
@@ -308,7 +306,7 @@ class cmc:
 
                         tokensDesc = f"// {tokens}"
 
-                    printInfo(f"{percentageDiff} % --- {tradeAction} la moneda {self.data[row[self.idDesc]][self.symbolNameDesc]} ({self.data[row[self.idDesc]][self.symbolDesc]}"
+                    printInfo(f"{percentageDiff} % --- {tradeAction} {self.data[row[self.idDesc]][self.symbolNameDesc]} ({self.data[row[self.idDesc]][self.symbolDesc]}"
                     + f" - {row[self.idDesc]}) // Precio = {self.data[row[self.idDesc]][self.priceDesc]} $, Antes = {self.data[row[self.idDesc]][self.prevPriceDesc]} $ {tokensDesc}", color)
 
             counter += 1

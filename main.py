@@ -3,10 +3,10 @@ import triggerClass as tC
 # -------------------------------------------------------------------------------------------
 
 e = tC.cmc(
-    sellTrigger=100,  # %
-    buyTrigger=-95,  # %
+    buyTrigger=-5,  # %
+    sellTrigger=1,  # %
     sendNotifications=False,
-    isSimulation=False,
+    isSimulation=True,
     moveHistoryCsv="moveHistory.csv",
     delay=30
 )

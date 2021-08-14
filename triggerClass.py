@@ -23,6 +23,16 @@ import time
 def formatPercentages(val):
     return round((val - 1) * 100, 4)
 
+def boolToInt(val):
+    if val == "True" or val == True:
+        res = 1
+    elif val == "False" or val == False:
+        res = 0
+    else:
+        res = -1
+
+    return res
+
 def printInfo(desc, color=""):
     print(dt.datetime.now(), "//", color, desc, bcolors.END)
 
@@ -43,10 +53,18 @@ class cmc:
         self.moveHistoryCsv = moveHistoryCsv
         self.delay = delay
 
-        self.typeDesc = "type"
-        self.listDesc = "List"
+        # self.typeDesc = "type"
+        self.dataDesc = "data"
+        self.cryptoCurrencyListDesc = "cryptoCurrencyList"
+        self.statusDesc = "status"
+        self.timestampDesc = "timestamp"
+        self.prevTimestampDesc = "prevTimestamp"
+
+        self.timestamp = None
+        self.prevTimestamp = None
 
         self.allCoinMarketCapCoinsUrl = "https://api.coinmarketcap.com/data-api/v3/cryptocurrency/listing?start=1&limit=10000&convert=USD&cryptoType=all&tagType=all&audited=false"
+        self.checkCoinMarketCapTimestampUrl = "https://api.coinmarketcap.com/data-api/v3/cryptocurrency/listing?limit=0"
         self.cryptoBaseUrl = "https://coinmarketcap.com/currencies/"
 
         self.uniswapBaseUrl = "https://app.uniswap.org/#/swap?"
@@ -127,7 +145,7 @@ class cmc:
         # Abi for Token to sell - all we need from here is the balanceOf & approve function can replace with shortABI
         self.sellAbi = '[{"inputs":[{"internalType":"string","name":"_NAME","type":"string"},{"internalType":"string","name":"_SYMBOL","type":"string"},{"internalType":"uint256","name":"_DECIMALS","type":"uint256"},{"internalType":"uint256","name":"_supply","type":"uint256"},{"internalType":"uint256","name":"_txFee","type":"uint256"},{"internalType":"uint256","name":"_lpFee","type":"uint256"},{"internalType":"uint256","name":"_MAXAMOUNT","type":"uint256"},{"internalType":"uint256","name":"SELLMAXAMOUNT","type":"uint256"},{"internalType":"address","name":"routerAddress","type":"address"},{"internalType":"address","name":"tokenOwner","type":"address"}],"stateMutability":"nonpayable","type":"constructor"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"owner","type":"address"},{"indexed":true,"internalType":"address","name":"spender","type":"address"},{"indexed":false,"internalType":"uint256","name":"value","type":"uint256"}],"name":"Approval","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"uint256","name":"minTokensBeforeSwap","type":"uint256"}],"name":"MinTokensBeforeSwapUpdated","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"previousOwner","type":"address"},{"indexed":true,"internalType":"address","name":"newOwner","type":"address"}],"name":"OwnershipTransferred","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"uint256","name":"tokensSwapped","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"ethReceived","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"tokensIntoLiqudity","type":"uint256"}],"name":"SwapAndLiquify","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"bool","name":"enabled","type":"bool"}],"name":"SwapAndLiquifyEnabledUpdated","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"from","type":"address"},{"indexed":true,"internalType":"address","name":"to","type":"address"},{"indexed":false,"internalType":"uint256","name":"value","type":"uint256"}],"name":"Transfer","type":"event"},{"inputs":[],"name":"_liquidityFee","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"_maxTxAmount","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"_owner","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"_taxFee","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"owner","type":"address"},{"internalType":"address","name":"spender","type":"address"}],"name":"allowance","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"spender","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"approve","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"account","type":"address"}],"name":"balanceOf","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"claimTokens","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"decimals","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"spender","type":"address"},{"internalType":"uint256","name":"subtractedValue","type":"uint256"}],"name":"decreaseAllowance","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"tAmount","type":"uint256"}],"name":"deliver","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"account","type":"address"}],"name":"excludeFromFee","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"account","type":"address"}],"name":"excludeFromReward","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"geUnlockTime","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"account","type":"address"}],"name":"includeInFee","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"account","type":"address"}],"name":"includeInReward","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"spender","type":"address"},{"internalType":"uint256","name":"addedValue","type":"uint256"}],"name":"increaseAllowance","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"account","type":"address"}],"name":"isExcludedFromFee","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"account","type":"address"}],"name":"isExcludedFromReward","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"time","type":"uint256"}],"name":"lock","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"name","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"numTokensSellToAddToLiquidity","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"owner","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"tAmount","type":"uint256"},{"internalType":"bool","name":"deductTransferFee","type":"bool"}],"name":"reflectionFromToken","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"renounceOwnership","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"liquidityFee","type":"uint256"}],"name":"setLiquidityFeePercent","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"maxTxPercent","type":"uint256"}],"name":"setMaxTxPercent","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"swapNumber","type":"uint256"}],"name":"setNumTokensSellToAddToLiquidity","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"bool","name":"_enabled","type":"bool"}],"name":"setSwapAndLiquifyEnabled","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"taxFee","type":"uint256"}],"name":"setTaxFeePercent","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"swapAndLiquifyEnabled","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"symbol","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"rAmount","type":"uint256"}],"name":"tokenFromReflection","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"totalFees","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"totalSupply","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"recipient","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"transfer","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"sender","type":"address"},{"internalType":"address","name":"recipient","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"transferFrom","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"newOwner","type":"address"}],"name":"transferOwnership","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"uniswapV2Pair","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"uniswapV2Router","outputs":[{"internalType":"contract IUniswapV2Router02","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"unlock","outputs":[],"stateMutability":"nonpayable","type":"function"},{"stateMutability":"payable","type":"receive"}]'
 
-        self.bnbAmountToBuy = 0.01
+        self.bnbAmountToBuy = 0.1
         self.wbnbContract = "0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c"
 
         self.senderAddress = "0xa9eC6E2129267f01a2E772E208F8b0Ed802748D0"
@@ -176,6 +194,8 @@ class cmc:
         counter = 0
 
         while True:
+
+            delayDone = False
 
             # Get .csv symbols not sold
             if os.path.exists(self.moveHistoryCsv):
@@ -288,17 +308,22 @@ class cmc:
                     
                     else:
 
-                        if not self.isSimulation:
+                        if not self.isSimulation and self.binanceSmartChainDesc in tokens.keys():
+
                             token = tokens[self.binanceSmartChainDesc]
 
                             print(token)
 
-                            exit()
+                            if not delayDone:
+                                delayDone = True
+                                time.sleep(self.delay * 2)
 
                             if isToBuy:
                                 self.buyToken(token=token)
+                                printInfo("Compra realizada", bcolors.OKMSG)
                             else:
                                 self.sellToken(token=token)
+                                printInfo("Venta realizada", bcolors.OKMSG)
 
                         
                         if self.sendNotifications:
@@ -311,7 +336,7 @@ class cmc:
 
             counter += 1
 
-            if counter % 100 == 0:
+            if counter % 50 == 0:
                 printInfo(f"--- For Loop: {counter}", bcolors.WARN)
 
             time.sleep(self.delay)
@@ -343,35 +368,63 @@ class cmc:
 
     def getData(self):
 
-        while True:
-            try:
-                with urllib.request.urlopen(self.allCoinMarketCapCoinsUrl) as url:
-                    rawData = json.loads(url.read().decode())
+        df = pd.DataFrame()
 
-                break
+        getUrlData = self.checkCoinMarketCapTimestampUrl
+        dataToGet = False
+
+        while len(df) == 0:
+
+            try:
+
+                while True:
+
+                    with urllib.request.urlopen(getUrlData) as url:
+                        rawData = json.loads(url.read().decode())
+
+                    if dataToGet:
+                        self.prevTimestamp = self.timestamp
+                        break
+
+                    elif self.timestamp != self.prevTimestamp:
+                        getUrlData = self.allCoinMarketCapCoinsUrl
+                        dataToGet = True
+
+                    else:
+                        time.sleep(5)
+
+                    self.timestamp = rawData[self.statusDesc][self.timestampDesc]
+
+                for i, data in rawData.items():
+                    for desc, listOfDicts in data.items():
+
+                        # print(desc)
+
+                        if desc == self.cryptoCurrencyListDesc:
+                            
+                            df = pd.DataFrame(listOfDicts)
+                            
+                            # Select few columns only
+                            df = df[self.selectDataColumns]
+                            
+                            # df = df.drop(['tags', 'cmcRank', 'marketPairCount', 'lastUpdated', 'isAudited', 'platform', 'auditInfoList'], axis = 1)
+
+                            df = df.rename(columns = {self.nameDesc: self.symbolNameDesc})
+
+                            # Prepare column to expand
+                            df[self.columnToExpand] = df[self.columnToExpand].apply(lambda cell: cell[0])
+
+                            # Expand column in df
+                            df = df.drop(self.columnToExpand, axis=1).join(pd.DataFrame(df[self.columnToExpand].values.tolist()))
+
             except:
                 printInfo("Error obteniendo datos en getData()", bcolors.ERRMSG)
+                
+            if len(df) == 0:
+                printInfo("No se han obtenido datos en getData()", bcolors.ERRMSG)
                 time.sleep(self.delay)
-
-        for i, data in rawData.items():
-            for desc, listOfDicts in data.items():
-
-                if desc.endswith(self.listDesc):
-                    
-                    df = pd.DataFrame(listOfDicts)
-                    
-                    # Select few columns only
-                    df = df[self.selectDataColumns]
-                    
-                    # df = df.drop(['tags', 'cmcRank', 'marketPairCount', 'lastUpdated', 'isAudited', 'platform', 'auditInfoList'], axis = 1)
-
-                    df = df.rename(columns = {self.nameDesc: self.symbolNameDesc})
-
-                    # Prepare column to expand
-                    df[self.columnToExpand] = df[self.columnToExpand].apply(lambda cell: cell[0])
-
-                    # Expand column in df
-                    df = df.drop(self.columnToExpand, axis=1).join(pd.DataFrame(df[self.columnToExpand].values.tolist()))
+            else:
+                break
 
         return df
 
@@ -463,47 +516,46 @@ class cmc:
         # Dict to be returned
         tokens = {}
 
-        allHrefs = []
-
         cryptoUrl = self.cryptoBaseUrl + cryptoSlug
 
         while True:
+
             try:
                 html_page = urllib.request.urlopen(cryptoUrl)
                 soup = BeautifulSoup(html_page, "html.parser")
 
+                allHrefs = []
+
+                for link in soup.findAll('a'):
+                    href = str(link.get('href'))
+
+                    if self.tokenUrl in href:
+                        allHrefs.append(href)
+
+                allHrefs = list(dict.fromkeys(allHrefs))
+
+                for href in allHrefs:
+
+                    if self.bscscanDesc in href:
+                        platform = self.binanceSmartChainDesc
+                    elif self.etherscanDesc in href:
+                        platform = self.ethereumDesc
+                    else:
+                        continue
+
+                    contractToken = href.rsplit('/', 1)[-1]
+
+                    tokens[platform] = contractToken
+
+                # Sort dict
+                if len(tokens) > 0:
+                    tokens = {key: val for key, val in sorted(tokens.items(), key = lambda ele: ele[0])}
+
                 break
+
             except:
                 printInfo("Error obteniendo datos en getTokens()", bcolors.ERRMSG)
                 time.sleep(self.delay)
-
-        for link in soup.findAll('a'):
-            href = str(link.get('href'))
-
-            if self.tokenUrl in href:
-                allHrefs.append(href)
-
-        allHrefs = list(dict.fromkeys(allHrefs))
-
-        for href in allHrefs:
-
-            if self.bscscanDesc in href:
-                platform = self.binanceSmartChainDesc
-            else:
-                continue
-
-            """
-            if self.etherscanDesc in href:
-                platform = self.ethereumDesc
-            """
-
-            contractToken = href.rsplit('/', 1)[-1]
-
-            tokens[platform] = contractToken
-
-        # Sort dict
-        if len(tokens) > 0:
-            tokens = {key: val for key, val in sorted(tokens.items(), key = lambda ele: ele[0])}
 
         return tokens
     
@@ -561,7 +613,7 @@ class cmc:
                 0, # set to 0, or specify minimum amount of tokeny you want to receive - consider decimals!!!
                 [spend,tokenToBuy],
                 self.senderAddress,
-                (int(time.time()) + 1000000)
+                (int(time.time()) + 10000)
                 ).buildTransaction({
                 'from': self.senderAddress,
                 'value': web3.toWei(self.bnbAmountToBuy,'ether'), # This is the Token(BNB) amount you want to Swap from
@@ -574,9 +626,6 @@ class cmc:
                 tx_token = web3.eth.send_raw_transaction(signed_txn.rawTransaction)
 
                 print(web3.toHex(tx_token))
-
-                balance = web3.eth.get_balance(self.senderAddress)
-                humanReadable = web3.fromWei(balance,'ether')
 
                 break
 
@@ -620,6 +669,10 @@ class cmc:
                 symbol = sellTokenContract.functions.symbol().call()
                 readable = web3.fromWei(balance,'ether')
                 print("Balance: " + str(readable) + " " + symbol)
+
+                if int(readable) == 0:
+                    printInfo(f"El balance de {symbol} es 0 y no hay nada que vender", bcolors.WARN)
+                    break
 
                 #Enter amount of token to sell
                 tokenValue = web3.toWei(readable, 'ether')

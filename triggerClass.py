@@ -316,7 +316,7 @@ class cmc:
 
                             if not delayDone:
                                 delayDone = True
-                                time.sleep(self.delay * 2)
+                                #time.sleep(self.delay * 2)
 
                             if isToBuy:
                                 self.buyToken(token=token)

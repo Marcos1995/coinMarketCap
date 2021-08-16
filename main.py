@@ -12,8 +12,9 @@ e = tC.cmc(
     delay=30
 )
 
-e.core()
+e.buyTokenTest()
 
+exit()
 from pycoingecko import CoinGeckoAPI
 import time
 import bcolors

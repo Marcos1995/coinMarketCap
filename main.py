@@ -4,7 +4,7 @@ import pandas as pd
 # -------------------------------------------------------------------------------------------
 
 e = tC.cmc(
-    buyTrigger=-99,  # %
+    buyTrigger=-109,  # %
     sellTrigger=100,  # %
     sendNotifications=False,
     isSimulation=False,
@@ -12,7 +12,7 @@ e = tC.cmc(
     delay=30
 )
 
-e.buyTokenTest()
+e.core()
 
 exit()
 from pycoingecko import CoinGeckoAPI

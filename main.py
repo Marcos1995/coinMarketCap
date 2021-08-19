@@ -9,6 +9,7 @@ e = tC.cmc(
     sendNotifications=False,
     isSimulation=False,
     moveHistoryCsv="moveHistory.csv",
+    bscContractsCsv = "bscContracts.csv",
     delay=30
 )
 

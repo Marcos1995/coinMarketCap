@@ -44,13 +44,14 @@ def getPrivateKey():
 
 class cmc:
 
-    def __init__(self, buyTrigger, sellTrigger, sendNotifications, isSimulation, moveHistoryCsv, delay):
+    def __init__(self, buyTrigger, sellTrigger, sendNotifications, isSimulation, moveHistoryCsv, bscContractsCsv, delay):
 
         self.buyTrigger = buyTrigger
         self.sellTrigger = sellTrigger
         self.sendNotifications = sendNotifications
         self.isSimulation = isSimulation
         self.moveHistoryCsv = moveHistoryCsv
+        self.bscContractsCsv = bscContractsCsv
         self.delay = delay
 
         # self.typeDesc = "type"
@@ -112,6 +113,7 @@ class cmc:
         self.ethereumDesc = "Ethereum"
         self.binanceSmartChainDesc = "BinanceSmartChain"
 
+        self.bscContractDesc = "bscContract"
         self.reservedContract = "reservedContract"
 
         self.data = {}
@@ -155,8 +157,10 @@ class cmc:
         self.getReservedABI = '[{"inputs":[],"payable":false,"stateMutability":"nonpayable","type":"constructor"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"owner","type":"address"},{"indexed":true,"internalType":"address","name":"spender","type":"address"},{"indexed":false,"internalType":"uint256","name":"value","type":"uint256"}],"name":"Approval","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"sender","type":"address"},{"indexed":false,"internalType":"uint256","name":"amount0","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"amount1","type":"uint256"},{"indexed":true,"internalType":"address","name":"to","type":"address"}],"name":"Burn","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"sender","type":"address"},{"indexed":false,"internalType":"uint256","name":"amount0","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"amount1","type":"uint256"}],"name":"Mint","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"sender","type":"address"},{"indexed":false,"internalType":"uint256","name":"amount0In","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"amount1In","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"amount0Out","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"amount1Out","type":"uint256"},{"indexed":true,"internalType":"address","name":"to","type":"address"}],"name":"Swap","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"uint112","name":"reserve0","type":"uint112"},{"indexed":false,"internalType":"uint112","name":"reserve1","type":"uint112"}],"name":"Sync","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"from","type":"address"},{"indexed":true,"internalType":"address","name":"to","type":"address"},{"indexed":false,"internalType":"uint256","name":"value","type":"uint256"}],"name":"Transfer","type":"event"},{"constant":true,"inputs":[],"name":"DOMAIN_SEPARATOR","outputs":[{"internalType":"bytes32","name":"","type":"bytes32"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[],"name":"MINIMUM_LIQUIDITY","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[],"name":"PERMIT_TYPEHASH","outputs":[{"internalType":"bytes32","name":"","type":"bytes32"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[{"internalType":"address","name":"","type":"address"},{"internalType":"address","name":"","type":"address"}],"name":"allowance","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":false,"inputs":[{"internalType":"address","name":"spender","type":"address"},{"internalType":"uint256","name":"value","type":"uint256"}],"name":"approve","outputs":[{"internalType":"bool","name":"","type":"bool"}],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":true,"inputs":[{"internalType":"address","name":"","type":"address"}],"name":"balanceOf","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":false,"inputs":[{"internalType":"address","name":"to","type":"address"}],"name":"burn","outputs":[{"internalType":"uint256","name":"amount0","type":"uint256"},{"internalType":"uint256","name":"amount1","type":"uint256"}],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":true,"inputs":[],"name":"decimals","outputs":[{"internalType":"uint8","name":"","type":"uint8"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[],"name":"factory","outputs":[{"internalType":"address","name":"","type":"address"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[],"name":"getReserves","outputs":[{"internalType":"uint112","name":"_reserve0","type":"uint112"},{"internalType":"uint112","name":"_reserve1","type":"uint112"},{"internalType":"uint32","name":"_blockTimestampLast","type":"uint32"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":false,"inputs":[{"internalType":"address","name":"_token0","type":"address"},{"internalType":"address","name":"_token1","type":"address"}],"name":"initialize","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":true,"inputs":[],"name":"kLast","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":false,"inputs":[{"internalType":"address","name":"to","type":"address"}],"name":"mint","outputs":[{"internalType":"uint256","name":"liquidity","type":"uint256"}],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":true,"inputs":[],"name":"name","outputs":[{"internalType":"string","name":"","type":"string"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[{"internalType":"address","name":"","type":"address"}],"name":"nonces","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":false,"inputs":[{"internalType":"address","name":"owner","type":"address"},{"internalType":"address","name":"spender","type":"address"},{"internalType":"uint256","name":"value","type":"uint256"},{"internalType":"uint256","name":"deadline","type":"uint256"},{"internalType":"uint8","name":"v","type":"uint8"},{"internalType":"bytes32","name":"r","type":"bytes32"},{"internalType":"bytes32","name":"s","type":"bytes32"}],"name":"permit","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":true,"inputs":[],"name":"price0CumulativeLast","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[],"name":"price1CumulativeLast","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":false,"inputs":[{"internalType":"address","name":"to","type":"address"}],"name":"skim","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":false,"inputs":[{"internalType":"uint256","name":"amount0Out","type":"uint256"},{"internalType":"uint256","name":"amount1Out","type":"uint256"},{"internalType":"address","name":"to","type":"address"},{"internalType":"bytes","name":"data","type":"bytes"}],"name":"swap","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":true,"inputs":[],"name":"symbol","outputs":[{"internalType":"string","name":"","type":"string"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":false,"inputs":[],"name":"sync","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":true,"inputs":[],"name":"token0","outputs":[{"internalType":"address","name":"","type":"address"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[],"name":"token1","outputs":[{"internalType":"address","name":"","type":"address"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[],"name":"totalSupply","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":false,"inputs":[{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"value","type":"uint256"}],"name":"transfer","outputs":[{"internalType":"bool","name":"","type":"bool"}],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":false,"inputs":[{"internalType":"address","name":"from","type":"address"},{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"value","type":"uint256"}],"name":"transferFrom","outputs":[{"internalType":"bool","name":"","type":"bool"}],"payable":false,"stateMutability":"nonpayable","type":"function"}]'
 
         self.bnbAmountToBuy = 0.1
-        self.wbnbContract = "0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c"
-        self.usdtContract = "0x55d398326f99059ff775485246999027b3197955"
+        self.wbnbContract = self.web3.toChecksumAddress("0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c")
+        self.usdtContract = self.web3.toChecksumAddress("0x55d398326f99059ff775485246999027b3197955")
+
+        self.contract = self.web3.eth.contract(address=self.getPriceAddress, abi=self.getPriceABI)
 
         self.senderAddress = "0xa9eC6E2129267f01a2E772E208F8b0Ed802748D0"
         self.privateKey = getPrivateKey()
@@ -201,7 +205,16 @@ class cmc:
         # Instantiate list
         csvSymbolsNotSold = []
 
+        csvBscContracts = []
+
         counter = 0
+
+        # Get .csv symbols not sold
+        if os.path.exists(self.bscContractsCsv):
+            csvBscContracts = self.getCsvBscContracts()
+            h = False
+        else:
+            h = True
 
         while True:
 
@@ -232,10 +245,33 @@ class cmc:
                     self.data[row[self.idDesc]][self.lastUpdatedDesc] = row[self.lastUpdatedDesc]
                     self.data[row[self.idDesc]][self.percentChange1hDesc] = row[self.percentChange1hDesc]
 
-                    if self.binanceSmartChainDesc not in self.getTokens(cryptoSlug=self.data[row[self.idDesc]][self.slugDesc]).keys():
-                        printInfo(f"El symbol {self.data[row[self.idDesc]][self.slugDesc]} no tiene {self.binanceSmartChainDesc}", bcolors.ERRMSG)
-                    else:
-                        printInfo(f"El symbol {self.data[row[self.idDesc]][self.slugDesc]} tiene {self.binanceSmartChainDesc}", bcolors.OKMSG)
+                    if row[self.idDesc] not in csvBscContracts:
+
+                        print(f"no existe {row[self.symbolNameDesc]}")
+                        continue
+
+                        t = self.getTokens(cryptoSlug=self.data[row[self.idDesc]][self.slugDesc])
+
+                        if self.binanceSmartChainDesc in t.keys():
+                            bscContract = t[self.binanceSmartChainDesc]
+                        else:
+                            bscContract = None
+
+                        self.data[row[self.idDesc]][self.bscContractDesc] = bscContract
+
+                        tokenData = {
+                            self.idDesc: int(row[self.idDesc]),
+                            self.symbolDesc: row[self.symbolDesc],
+                            self.symbolNameDesc: row[self.symbolNameDesc],
+                            self.slugDesc: row[self.slugDesc],
+                            self.bscContractDesc: bscContract
+                        }
+
+                        output = pd.DataFrame()
+                        output = output.append(tokenData, ignore_index=True)
+
+                        output.to_csv(self.bscContractsCsv, index=False, columns=tokenData.keys(), mode="a", header=h)
+                        h = False
 
                 # If "previous" values are set
                 else:
@@ -343,6 +379,8 @@ class cmc:
                                 self.sellToken(token=token)
                                 printInfo("Venta realizada", bcolors.OKMSG)
 
+            exit()
+
             counter += 1
 
             if counter % 50 == 0:
@@ -373,6 +411,25 @@ class cmc:
         #     print(csvSymbolsNotSold)
 
         return csvSymbolsNotSold
+
+
+    def getCsvBscContracts(self):
+
+        csvBscContracts = []
+
+        with open(self.bscContractsCsv) as f:
+
+            lis = [line.split(sep=self.separator) for line in f]  # create a list of lists
+
+            for i, row in enumerate(lis):
+                if i == 0:
+                    idColumnIndex = row.index(self.idDesc)
+                else:
+                    csvBscContracts.append(int(row[idColumnIndex][:len(row[idColumnIndex]) - 2]))
+
+        csvBscContracts = list(dict.fromkeys(csvBscContracts))
+
+        return csvBscContracts
 
 
     def getData(self):
@@ -552,7 +609,7 @@ class cmc:
                     else:
                         continue
 
-                    contractToken = href.rsplit('/', 1)[-1]
+                    contractToken = href.rsplit('/', 1)[-1][:42]
 
                     tokens[platform] = contractToken
 
@@ -728,36 +785,31 @@ class cmc:
                 time.sleep(self.delay)
 
 
-    def test(self, token="0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c"):
+    def getBscscanPrice(self, token="0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c"):
 
-        web3 = Web3(Web3.HTTPProvider(self.bsc))
+        currentPrice = -1
 
-        print(web3.isConnected())
+        token = self.web3.toChecksumAddress(token)
 
-        while True:
-            
-            #Setup the PancakeSwap contract
-            contract = web3.eth.contract(address=self.getPriceAddress, abi=self.getPriceABI)
+        address = self.contract.functions.getPair(token, self.usdtContract).call()
 
-            a = web3.toChecksumAddress(token)
-            b = web3.toChecksumAddress(self.usdtContract)
+        if address == "0x0000000000000000000000000000000000000000":
+            # address = contract.functions.createPair(a, b).call()
+            # printInfo("No hay pair", bcolors.ERRMSG)
+            return currentPrice
 
-            address = contract.functions.getPair(a, b).call()
+        # printInfo(address, bcolors.OK)
 
-            if address == "0x0000000000000000000000000000000000000000":
-                address = contract.functions.createPair(a, b).call()
-                printInfo("Pair creado", bcolors.OKMSG)
-                break
+        reservesContract = self.web3.eth.contract(address=address, abi=self.getReservedABI)
+        reserves = reservesContract.functions.getReserves().call()
+        
+        #printInfo(reserves, bcolors.OK)
 
-            # printInfo(address, bcolors.OK)
+        if reserves[0] <= 0:
+            printInfo(f"Dividiendo por = {reserves[1]}", bcolors.WARN)
+        else:
+            currentPrice = reserves[1] / reserves[0]
 
-            reservesContract = web3.eth.contract(address=address, abi=self.getReservedABI)
-            reserves = reservesContract.functions.getReserves().call()
-            
-            printInfo(reserves, bcolors.OK)
+        #printInfo(f"{currentPrice} $", bcolors.OKMSG)
 
-            currentPrice = reserves[0] / reserves[1]
-
-            printInfo(f"{currentPrice} $", bcolors.OKMSG)
-
-            time.sleep(15)
+        return currentPrice

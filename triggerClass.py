@@ -54,6 +54,9 @@ class cmc:
         self.bscContractsCsv = bscContractsCsv
         self.delay = delay
 
+        self.csvBscPairAddresses = []
+        self.csvSymbolsNotSold = []
+
         # self.typeDesc = "type"
         self.dataDesc = "data"
         self.cryptoCurrencyListDesc = "cryptoCurrencyList"
@@ -146,6 +149,8 @@ class cmc:
         self.panRouterContractAddress = "0x10ED43C718714eb63d5aA57B78B54704E256024E"
         self.getPriceAddress = "0xBCfCcbde45cE874adCB698cC183deBcF17952812"
 
+        self.noPairAddress = "0x0000000000000000000000000000000000000000"
+
         #pancakeswap router abi 
         self.panabi = '[{"inputs":[{"internalType":"address","name":"_factory","type":"address"},{"internalType":"address","name":"_WETH","type":"address"}],"stateMutability":"nonpayable","type":"constructor"},{"inputs":[],"name":"WETH","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"tokenA","type":"address"},{"internalType":"address","name":"tokenB","type":"address"},{"internalType":"uint256","name":"amountADesired","type":"uint256"},{"internalType":"uint256","name":"amountBDesired","type":"uint256"},{"internalType":"uint256","name":"amountAMin","type":"uint256"},{"internalType":"uint256","name":"amountBMin","type":"uint256"},{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"deadline","type":"uint256"}],"name":"addLiquidity","outputs":[{"internalType":"uint256","name":"amountA","type":"uint256"},{"internalType":"uint256","name":"amountB","type":"uint256"},{"internalType":"uint256","name":"liquidity","type":"uint256"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"token","type":"address"},{"internalType":"uint256","name":"amountTokenDesired","type":"uint256"},{"internalType":"uint256","name":"amountTokenMin","type":"uint256"},{"internalType":"uint256","name":"amountETHMin","type":"uint256"},{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"deadline","type":"uint256"}],"name":"addLiquidityETH","outputs":[{"internalType":"uint256","name":"amountToken","type":"uint256"},{"internalType":"uint256","name":"amountETH","type":"uint256"},{"internalType":"uint256","name":"liquidity","type":"uint256"}],"stateMutability":"payable","type":"function"},{"inputs":[],"name":"factory","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"amountOut","type":"uint256"},{"internalType":"uint256","name":"reserveIn","type":"uint256"},{"internalType":"uint256","name":"reserveOut","type":"uint256"}],"name":"getAmountIn","outputs":[{"internalType":"uint256","name":"amountIn","type":"uint256"}],"stateMutability":"pure","type":"function"},{"inputs":[{"internalType":"uint256","name":"amountIn","type":"uint256"},{"internalType":"uint256","name":"reserveIn","type":"uint256"},{"internalType":"uint256","name":"reserveOut","type":"uint256"}],"name":"getAmountOut","outputs":[{"internalType":"uint256","name":"amountOut","type":"uint256"}],"stateMutability":"pure","type":"function"},{"inputs":[{"internalType":"uint256","name":"amountOut","type":"uint256"},{"internalType":"address[]","name":"path","type":"address[]"}],"name":"getAmountsIn","outputs":[{"internalType":"uint256[]","name":"amounts","type":"uint256[]"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"amountIn","type":"uint256"},{"internalType":"address[]","name":"path","type":"address[]"}],"name":"getAmountsOut","outputs":[{"internalType":"uint256[]","name":"amounts","type":"uint256[]"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"amountA","type":"uint256"},{"internalType":"uint256","name":"reserveA","type":"uint256"},{"internalType":"uint256","name":"reserveB","type":"uint256"}],"name":"quote","outputs":[{"internalType":"uint256","name":"amountB","type":"uint256"}],"stateMutability":"pure","type":"function"},{"inputs":[{"internalType":"address","name":"tokenA","type":"address"},{"internalType":"address","name":"tokenB","type":"address"},{"internalType":"uint256","name":"liquidity","type":"uint256"},{"internalType":"uint256","name":"amountAMin","type":"uint256"},{"internalType":"uint256","name":"amountBMin","type":"uint256"},{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"deadline","type":"uint256"}],"name":"removeLiquidity","outputs":[{"internalType":"uint256","name":"amountA","type":"uint256"},{"internalType":"uint256","name":"amountB","type":"uint256"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"token","type":"address"},{"internalType":"uint256","name":"liquidity","type":"uint256"},{"internalType":"uint256","name":"amountTokenMin","type":"uint256"},{"internalType":"uint256","name":"amountETHMin","type":"uint256"},{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"deadline","type":"uint256"}],"name":"removeLiquidityETH","outputs":[{"internalType":"uint256","name":"amountToken","type":"uint256"},{"internalType":"uint256","name":"amountETH","type":"uint256"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"token","type":"address"},{"internalType":"uint256","name":"liquidity","type":"uint256"},{"internalType":"uint256","name":"amountTokenMin","type":"uint256"},{"internalType":"uint256","name":"amountETHMin","type":"uint256"},{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"deadline","type":"uint256"}],"name":"removeLiquidityETHSupportingFeeOnTransferTokens","outputs":[{"internalType":"uint256","name":"amountETH","type":"uint256"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"token","type":"address"},{"internalType":"uint256","name":"liquidity","type":"uint256"},{"internalType":"uint256","name":"amountTokenMin","type":"uint256"},{"internalType":"uint256","name":"amountETHMin","type":"uint256"},{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"deadline","type":"uint256"},{"internalType":"bool","name":"approveMax","type":"bool"},{"internalType":"uint8","name":"v","type":"uint8"},{"internalType":"bytes32","name":"r","type":"bytes32"},{"internalType":"bytes32","name":"s","type":"bytes32"}],"name":"removeLiquidityETHWithPermit","outputs":[{"internalType":"uint256","name":"amountToken","type":"uint256"},{"internalType":"uint256","name":"amountETH","type":"uint256"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"token","type":"address"},{"internalType":"uint256","name":"liquidity","type":"uint256"},{"internalType":"uint256","name":"amountTokenMin","type":"uint256"},{"internalType":"uint256","name":"amountETHMin","type":"uint256"},{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"deadline","type":"uint256"},{"internalType":"bool","name":"approveMax","type":"bool"},{"internalType":"uint8","name":"v","type":"uint8"},{"internalType":"bytes32","name":"r","type":"bytes32"},{"internalType":"bytes32","name":"s","type":"bytes32"}],"name":"removeLiquidityETHWithPermitSupportingFeeOnTransferTokens","outputs":[{"internalType":"uint256","name":"amountETH","type":"uint256"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"tokenA","type":"address"},{"internalType":"address","name":"tokenB","type":"address"},{"internalType":"uint256","name":"liquidity","type":"uint256"},{"internalType":"uint256","name":"amountAMin","type":"uint256"},{"internalType":"uint256","name":"amountBMin","type":"uint256"},{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"deadline","type":"uint256"},{"internalType":"bool","name":"approveMax","type":"bool"},{"internalType":"uint8","name":"v","type":"uint8"},{"internalType":"bytes32","name":"r","type":"bytes32"},{"internalType":"bytes32","name":"s","type":"bytes32"}],"name":"removeLiquidityWithPermit","outputs":[{"internalType":"uint256","name":"amountA","type":"uint256"},{"internalType":"uint256","name":"amountB","type":"uint256"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"amountOut","type":"uint256"},{"internalType":"address[]","name":"path","type":"address[]"},{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"deadline","type":"uint256"}],"name":"swapETHForExactTokens","outputs":[{"internalType":"uint256[]","name":"amounts","type":"uint256[]"}],"stateMutability":"payable","type":"function"},{"inputs":[{"internalType":"uint256","name":"amountOutMin","type":"uint256"},{"internalType":"address[]","name":"path","type":"address[]"},{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"deadline","type":"uint256"}],"name":"swapExactETHForTokens","outputs":[{"internalType":"uint256[]","name":"amounts","type":"uint256[]"}],"stateMutability":"payable","type":"function"},{"inputs":[{"internalType":"uint256","name":"amountOutMin","type":"uint256"},{"internalType":"address[]","name":"path","type":"address[]"},{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"deadline","type":"uint256"}],"name":"swapExactETHForTokensSupportingFeeOnTransferTokens","outputs":[],"stateMutability":"payable","type":"function"},{"inputs":[{"internalType":"uint256","name":"amountIn","type":"uint256"},{"internalType":"uint256","name":"amountOutMin","type":"uint256"},{"internalType":"address[]","name":"path","type":"address[]"},{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"deadline","type":"uint256"}],"name":"swapExactTokensForETH","outputs":[{"internalType":"uint256[]","name":"amounts","type":"uint256[]"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"amountIn","type":"uint256"},{"internalType":"uint256","name":"amountOutMin","type":"uint256"},{"internalType":"address[]","name":"path","type":"address[]"},{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"deadline","type":"uint256"}],"name":"swapExactTokensForETHSupportingFeeOnTransferTokens","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"amountIn","type":"uint256"},{"internalType":"uint256","name":"amountOutMin","type":"uint256"},{"internalType":"address[]","name":"path","type":"address[]"},{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"deadline","type":"uint256"}],"name":"swapExactTokensForTokens","outputs":[{"internalType":"uint256[]","name":"amounts","type":"uint256[]"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"amountIn","type":"uint256"},{"internalType":"uint256","name":"amountOutMin","type":"uint256"},{"internalType":"address[]","name":"path","type":"address[]"},{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"deadline","type":"uint256"}],"name":"swapExactTokensForTokensSupportingFeeOnTransferTokens","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"amountOut","type":"uint256"},{"internalType":"uint256","name":"amountInMax","type":"uint256"},{"internalType":"address[]","name":"path","type":"address[]"},{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"deadline","type":"uint256"}],"name":"swapTokensForExactETH","outputs":[{"internalType":"uint256[]","name":"amounts","type":"uint256[]"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"amountOut","type":"uint256"},{"internalType":"uint256","name":"amountInMax","type":"uint256"},{"internalType":"address[]","name":"path","type":"address[]"},{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"deadline","type":"uint256"}],"name":"swapTokensForExactTokens","outputs":[{"internalType":"uint256[]","name":"amounts","type":"uint256[]"}],"stateMutability":"nonpayable","type":"function"},{"stateMutability":"payable","type":"receive"}]'
 
@@ -161,6 +166,8 @@ class cmc:
         self.usdtContract = self.web3.toChecksumAddress("0x55d398326f99059ff775485246999027b3197955")
 
         self.contract = self.web3.eth.contract(address=self.getPriceAddress, abi=self.getPriceABI)
+
+        self.pairAddressDesc = "pairAddress"
 
         self.senderAddress = "0xa9eC6E2129267f01a2E772E208F8b0Ed802748D0"
         self.privateKey = getPrivateKey()
@@ -202,38 +209,38 @@ class cmc:
 
     def core(self):
 
-        # Instantiate list
-        csvSymbolsNotSold = []
-
-        csvBscContracts = []
-
         counter = 0
 
-        # Get .csv symbols not sold
-        if os.path.exists(self.bscContractsCsv):
-            csvBscContracts = self.getCsvBscContracts()
-            h = False
-        else:
-            h = True
-
         while True:
+
+            if counter % 100 == 0:
+                # Get .csv symbols with pairAddresses
+                if os.path.exists(self.bscContractsCsv):
+                    self.csvBscPairAddresses = self.getCsvBscPairAddresses()
+                    bscContractsHeader = False
+                else:
+                    bscContractsHeader = True
+
+                printInfo(f"--- For Loop: {counter}", bcolors.WARN)
 
             delayDone = False
 
             # Get .csv symbols not sold
             if os.path.exists(self.moveHistoryCsv):
-                csvSymbolsNotSold = self.getCsvSymbolsNotSold()
-                # print(csvSymbolsNotSold)
+                self.csvSymbolsNotSold = self.getCsvSymbolsNotSold()
                 writeHeaders = False
             else:
                 writeHeaders = True
-                # printInfo(f"No existe el fichero {self.moveHistoryCsv}", bcolors.WARN)
 
             # Get API data
             df = self.getData()
 
             # For each dataframe row
             for i, row in df.iterrows():
+                bscContractsHeader = self.checkBscContracts(row=row, headers=bscContractsHeader)
+
+            # For each dataframe row
+            for i, row in self.csvBscPairAddresses.iterrows():
 
                 # If "current" values are not set
                 if self.data.get(row[self.idDesc], {self.priceDesc: -1})[self.priceDesc] == -1:
@@ -244,34 +251,6 @@ class cmc:
                     self.data[row[self.idDesc]][self.priceDesc] = row[self.priceDesc]
                     self.data[row[self.idDesc]][self.lastUpdatedDesc] = row[self.lastUpdatedDesc]
                     self.data[row[self.idDesc]][self.percentChange1hDesc] = row[self.percentChange1hDesc]
-
-                    if row[self.idDesc] not in csvBscContracts:
-
-                        print(f"no existe {row[self.symbolNameDesc]}")
-                        continue
-
-                        t = self.getTokens(cryptoSlug=self.data[row[self.idDesc]][self.slugDesc])
-
-                        if self.binanceSmartChainDesc in t.keys():
-                            bscContract = t[self.binanceSmartChainDesc]
-                        else:
-                            bscContract = None
-
-                        self.data[row[self.idDesc]][self.bscContractDesc] = bscContract
-
-                        tokenData = {
-                            self.idDesc: int(row[self.idDesc]),
-                            self.symbolDesc: row[self.symbolDesc],
-                            self.symbolNameDesc: row[self.symbolNameDesc],
-                            self.slugDesc: row[self.slugDesc],
-                            self.bscContractDesc: bscContract
-                        }
-
-                        output = pd.DataFrame()
-                        output = output.append(tokenData, ignore_index=True)
-
-                        output.to_csv(self.bscContractsCsv, index=False, columns=tokenData.keys(), mode="a", header=h)
-                        h = False
 
                 # If "previous" values are set
                 else:
@@ -295,7 +274,7 @@ class cmc:
                     percentageDiff = formatPercentages(percengeDiffWoFormat)
 
                     # If we should buy or sell a crypto
-                    if percentageDiff >= self.sellTrigger and row[self.idDesc] in csvSymbolsNotSold: # sell
+                    if percentageDiff >= self.sellTrigger and row[self.idDesc] in self.csvSymbolsNotSold: # sell
 
                         color = bcolors.OK
                         HTMLcolor = "green"
@@ -327,7 +306,7 @@ class cmc:
                         shutil.move(tempfile.name, self.moveHistoryCsv)
 
 
-                    elif percentageDiff <= self.buyTrigger and percentageDiff <= self.data[row[self.idDesc]][self.percentChange1hDesc] and row[self.idDesc] not in csvSymbolsNotSold: # buy
+                    elif percentageDiff <= self.buyTrigger and percentageDiff <= self.data[row[self.idDesc]][self.percentChange1hDesc] and row[self.idDesc] not in self.csvSymbolsNotSold: # buy
                         
                         color = bcolors.ERR
                         HTMLcolor = "red"
@@ -383,9 +362,6 @@ class cmc:
 
             counter += 1
 
-            if counter % 50 == 0:
-                printInfo(f"--- For Loop: {counter}", bcolors.WARN)
-
             time.sleep(self.delay)
 
 
@@ -407,29 +383,59 @@ class cmc:
 
         csvSymbolsNotSold = list(dict.fromkeys(csvSymbolsNotSold))
 
-        # if len(csvSymbolsNotSold) > 0:
-        #     print(csvSymbolsNotSold)
-
         return csvSymbolsNotSold
 
 
-    def getCsvBscContracts(self):
+    def getCsvBscPairAddresses(self):
 
-        csvBscContracts = []
+        df = pd.read_csv(self.bscContractsCsv, sep=self.separator)
 
-        with open(self.bscContractsCsv) as f:
+        # Filter out NaN values
+        df = df[df[self.pairAddressDesc].notnull()]
 
-            lis = [line.split(sep=self.separator) for line in f]  # create a list of lists
+        df[self.idDesc] = df[self.idDesc].astype(int)
 
-            for i, row in enumerate(lis):
-                if i == 0:
-                    idColumnIndex = row.index(self.idDesc)
-                else:
-                    csvBscContracts.append(int(row[idColumnIndex][:len(row[idColumnIndex]) - 2]))
+        return df
 
-        csvBscContracts = list(dict.fromkeys(csvBscContracts))
 
-        return csvBscContracts
+    # Insert token data if not in .csv file already
+    def checkBscContracts(self, row, headers):
+
+        if row[self.idDesc] not in self.csvBscPairAddresses:
+
+            t = self.getTokens(cryptoSlug=self.data[row[self.idDesc]][self.slugDesc])
+
+            if self.binanceSmartChainDesc in t.keys():
+                bscContract = t[self.binanceSmartChainDesc]
+                pairAddress = self.getPairAddress(token=bscContract)
+            else:
+                bscContract = None
+                pairAddress = None
+
+            self.data[row[self.idDesc]][self.bscContractDesc] = bscContract
+            self.data[row[self.idDesc]][self.pairAddressDesc] = pairAddress
+
+            tokenData = {
+                self.idDesc: int(row[self.idDesc]),
+                self.symbolDesc: row[self.symbolDesc],
+                self.symbolNameDesc: row[self.symbolNameDesc],
+                self.slugDesc: row[self.slugDesc],
+                self.bscContractDesc: bscContract,
+                self.pairAddressDesc: pairAddress
+            }
+
+            output = pd.DataFrame()
+            output = output.append(tokenData, ignore_index=True)
+
+            output.to_csv(self.bscContractsCsv, index=False, columns=tokenData.keys(), mode="a", header=headers)
+
+            headers = False
+
+            printInfo(f"Contract insertado para {row[self.symbolNameDesc]} ({bscContract} - {pairAddress})", bcolors.OK)
+
+            time.sleep(2)
+
+        return headers
 
 
     def getData(self):
@@ -785,6 +791,17 @@ class cmc:
                 time.sleep(self.delay)
 
 
+    def getPairAddress(self, token):
+
+        token = self.web3.toChecksumAddress(token)
+        pairAddress = self.contract.functions.getPair(token, self.usdtContract).call()
+
+        if pairAddress == self.noPairAddress:
+            pairAddress = None
+
+        return pairAddress
+
+
     def getBscscanPrice(self, token="0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c"):
 
         currentPrice = -1
@@ -793,7 +810,7 @@ class cmc:
 
         address = self.contract.functions.getPair(token, self.usdtContract).call()
 
-        if address == "0x0000000000000000000000000000000000000000":
+        if address == self.noPairAddress:
             # address = contract.functions.createPair(a, b).call()
             # printInfo("No hay pair", bcolors.ERRMSG)
             return currentPrice

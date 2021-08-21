@@ -54,7 +54,7 @@ class cmc:
         self.bscContractsCsv = bscContractsCsv
         self.delay = delay
 
-        self.csvBscPairAddresses = []
+        self.csvBscContractTokens = []
         self.csvSymbolsNotSold = []
 
         # self.typeDesc = "type"
@@ -211,15 +211,25 @@ class cmc:
 
         counter = 0
 
+        bscContractsDf = pd.DataFrame()
+
         while True:
 
             if counter % 100 == 0:
+
+                # Get API data
+                df = self.getData()
+
                 # Get .csv symbols with pairAddresses
                 if os.path.exists(self.bscContractsCsv):
-                    self.csvBscPairAddresses = self.getCsvBscPairAddresses()
+                    bscContractsDf = self.getCsvBscPairAddresses()
                     bscContractsHeader = False
                 else:
                     bscContractsHeader = True
+
+                # For each dataframe row
+                for i, row in df.iterrows():
+                    self.checkBscContracts(row=row, headers=bscContractsHeader)
 
                 printInfo(f"--- For Loop: {counter}", bcolors.WARN)
 
@@ -232,15 +242,8 @@ class cmc:
             else:
                 writeHeaders = True
 
-            # Get API data
-            df = self.getData()
-
             # For each dataframe row
-            for i, row in df.iterrows():
-                bscContractsHeader = self.checkBscContracts(row=row, headers=bscContractsHeader)
-
-            # For each dataframe row
-            for i, row in self.csvBscPairAddresses.iterrows():
+            for i, row in bscContractsDf.iterrows():
 
                 # If "current" values are not set
                 if self.data.get(row[self.idDesc], {self.priceDesc: -1})[self.priceDesc] == -1:
@@ -248,9 +251,26 @@ class cmc:
                     self.data.setdefault(row[self.idDesc], {})[self.symbolNameDesc] = row[self.symbolNameDesc]
                     self.data[row[self.idDesc]][self.symbolDesc] = row[self.symbolDesc]
                     self.data[row[self.idDesc]][self.slugDesc] = row[self.slugDesc]
-                    self.data[row[self.idDesc]][self.priceDesc] = row[self.priceDesc]
-                    self.data[row[self.idDesc]][self.lastUpdatedDesc] = row[self.lastUpdatedDesc]
-                    self.data[row[self.idDesc]][self.percentChange1hDesc] = row[self.percentChange1hDesc]
+
+                    reserves = self.getBscscanReserves(pairAddress=row[self.pairAddressDesc])
+
+                    dt_object = dt.datetime.fromtimestamp(reserves[2])
+
+                    if reserves[0] <= 0:
+                        printInfo(f"Dividiendo por = {reserves[1]}", bcolors.WARN)
+                    else:
+                        currentPrice = reserves[1] / reserves[0]
+
+                    printInfo(f"{row[self.symbolNameDesc]} = {currentPrice} $ ({dt_object})", bcolors.OK)
+
+                    continue
+
+                    self.data[row[self.idDesc]][self.priceDesc] = self.getBscscanReserves(pairAddress=row[self.pairAddressDesc])
+
+                    self.data[row[self.idDesc]][self.bscContractDesc] = row[self.bscContractDesc]
+                    self.data[row[self.idDesc]][self.pairAddressDesc] = row[self.pairAddressDesc]
+
+                    exit()
 
                 # If "previous" values are set
                 else:
@@ -390,10 +410,12 @@ class cmc:
 
         df = pd.read_csv(self.bscContractsCsv, sep=self.separator)
 
+        df[self.idDesc] = df[self.idDesc].astype(int)
+
+        self.csvBscContractTokens = df[self.idDesc].tolist()
+
         # Filter out NaN values
         df = df[df[self.pairAddressDesc].notnull()]
-
-        df[self.idDesc] = df[self.idDesc].astype(int)
 
         return df
 
@@ -401,9 +423,9 @@ class cmc:
     # Insert token data if not in .csv file already
     def checkBscContracts(self, row, headers):
 
-        if row[self.idDesc] not in self.csvBscPairAddresses:
+        if row[self.idDesc] not in self.csvBscContractTokens:
 
-            t = self.getTokens(cryptoSlug=self.data[row[self.idDesc]][self.slugDesc])
+            t = self.getTokens(cryptoSlug=row[self.slugDesc])
 
             if self.binanceSmartChainDesc in t.keys():
                 bscContract = t[self.binanceSmartChainDesc]
@@ -411,9 +433,6 @@ class cmc:
             else:
                 bscContract = None
                 pairAddress = None
-
-            self.data[row[self.idDesc]][self.bscContractDesc] = bscContract
-            self.data[row[self.idDesc]][self.pairAddressDesc] = pairAddress
 
             tokenData = {
                 self.idDesc: int(row[self.idDesc]),
@@ -429,13 +448,9 @@ class cmc:
 
             output.to_csv(self.bscContractsCsv, index=False, columns=tokenData.keys(), mode="a", header=headers)
 
-            headers = False
-
             printInfo(f"Contract insertado para {row[self.symbolNameDesc]} ({bscContract} - {pairAddress})", bcolors.OK)
 
             time.sleep(2)
-
-        return headers
 
 
     def getData(self):
@@ -802,25 +817,16 @@ class cmc:
         return pairAddress
 
 
-    def getBscscanPrice(self, token="0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c"):
+    def getBscscanReserves(self, pairAddress):
 
-        currentPrice = -1
+        if pairAddress == self.noPairAddress:
+            printInfo("No hay pair", bcolors.ERRMSG)
+            exit()
 
-        token = self.web3.toChecksumAddress(token)
-
-        address = self.contract.functions.getPair(token, self.usdtContract).call()
-
-        if address == self.noPairAddress:
-            # address = contract.functions.createPair(a, b).call()
-            # printInfo("No hay pair", bcolors.ERRMSG)
-            return currentPrice
-
-        # printInfo(address, bcolors.OK)
-
-        reservesContract = self.web3.eth.contract(address=address, abi=self.getReservedABI)
+        reservesContract = self.web3.eth.contract(address=pairAddress, abi=self.getReservedABI)
         reserves = reservesContract.functions.getReserves().call()
-        
-        #printInfo(reserves, bcolors.OK)
+
+        return reserves
 
         if reserves[0] <= 0:
             printInfo(f"Dividiendo por = {reserves[1]}", bcolors.WARN)

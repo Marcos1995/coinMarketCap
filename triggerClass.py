@@ -169,6 +169,8 @@ class cmc:
         self.pancakeSwapRouter = self.web3.eth.contract(address=self.panRouterContractAddress, abi=self.panabi)
         self.oneDollar = self.web3.toWei("1", "ether")
 
+        self.tokensToSell = 10 ** 18
+
         self.bnbAmountToBuy = 0.1
         self.wbnbContract = self.web3.toChecksumAddress("0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c")
         self.usdtContract = self.web3.toChecksumAddress("0x55d398326f99059ff775485246999027b3197955")
@@ -211,17 +213,22 @@ class cmc:
         if token == self.wbnbContract or token == self.usdtContract:
             return 0
 
-        #tokenRouter = self.web3.eth.contract(address=token, abi=self.tokenAbi)
-        #tokenDecimals = tokenRouter.functions.decimals().call()
+        """
+        try:
+            tokenRouter = self.web3.eth.contract(address=token, abi=self.tokenAbi)
+            tokenDecimals = tokenRouter.functions.decimals().call()
+        except:
+            tokenDecimals = 18
+        """
         
-        #tokensToSell = self.setDecimals(1, tokenDecimals)
+        # tokensToSell = 10 ** tokenDecimals # self.setDecimals(1, tokenDecimals)
 
         try:
-            tokenAmountOut = self.pancakeSwapRouter.functions.getAmountsOut(self.oneDollar, [token, self.wbnbContract]).call()
-            bnbPriceInUSDT =  float(self.web3.fromWei(tokenAmountOut[1], "ether")) # / tokensToSell
+            tokenAmountOut = self.pancakeSwapRouter.functions.getAmountsOut(self.tokensToSell, [token, self.wbnbContract]).call()
+            tokenPriceInBNB =  tokenAmountOut[1] / self.tokensToSell
 
-            BNBamountOut = self.pancakeSwapRouter.functions.getAmountsOut(self.oneDollar, [self.wbnbContract, self.usdtContract]).call()
-            tokenPriceInBNB =  BNBamountOut[1] / BNBamountOut[0]
+            #BNBamountOut = self.pancakeSwapRouter.functions.getAmountsOut(self.oneDollar, [self.wbnbContract, self.usdtContract]).call()
+            bnbPriceInUSDT = 1 # BNBamountOut[1] / BNBamountOut[0]
 
         except:
             bnbPriceInUSDT = 0
@@ -341,8 +348,6 @@ class cmc:
 
                     self.data[row[self.idDesc]][self.priceDesc] = self.getPancakeSwapPrice(token=row[self.bscContractDesc])
 
-                    #printInfo(f"{i}) {row[self.symbolNameDesc]} = {self.data[row[self.idDesc]][self.priceDesc]} BNB", bcolors.OK)
-
 
                 # If "previous" values are set
                 else:
@@ -390,7 +395,7 @@ class cmc:
                         shutil.move(tempfile.name, self.moveHistoryCsv)
 
 
-                    elif percentageDiff <= self.buyTrigger and percentageDiff <= self.data[row[self.idDesc]][self.percentChange1hDesc] and row[self.idDesc] not in self.csvSymbolsNotSold: # buy
+                    elif percentageDiff <= self.buyTrigger and row[self.idDesc] not in self.csvSymbolsNotSold: # buy
                         
                         color = bcolors.ERR
                         HTMLcolor = "red"
@@ -420,8 +425,8 @@ class cmc:
                     #tokens = self.getTokens(cryptoSlug=self.data[row[self.idDesc]][self.slugDesc])
 
                     printInfo(f"{percentageDiff} % --- {tradeAction} {self.data[row[self.idDesc]][self.symbolNameDesc]} ({self.data[row[self.idDesc]][self.symbolDesc]}"
-                    + f" - {row[self.idDesc]}) // Precio = {self.data[row[self.idDesc]][self.priceDesc]} $, Antes = {self.data[row[self.idDesc]][self.prevPriceDesc]} $"
-                    + f" {self.data[row[self.idDesc]][self.bscContractDesc]}", color)
+                    + f" - {row[self.idDesc]}) // Ahora = {self.data[row[self.idDesc]][self.priceDesc]} $, Antes = {self.data[row[self.idDesc]][self.prevPriceDesc]} $"
+                    + f" (https://pancakeswap.finance/swap?inputCurrency={self.data[row[self.idDesc]][self.bscContractDesc]})", color)
 
                     #if len(tokens) > 0:
 

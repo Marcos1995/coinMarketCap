@@ -4,15 +4,15 @@ import pandas as pd
 # -------------------------------------------------------------------------------------------
 
 e = tC.cmc(
-    buyTrigger=-20,  # %
-    sellTrigger=10,  # %
+    buyTrigger=-50,  # %
+    sellTrigger=50,  # %
     sendNotifications=False,
     isSimulation=True,
     moveHistoryCsv="moveHistory.csv",
     bscContractsCsv = "bscContracts.csv",
     delay=30
 )
-exit()
+
 e.core()
 
 exit()

@@ -74,6 +74,8 @@ class cmc:
         self.uniswapBaseUrl = "https://app.uniswap.org/#/swap?"
         self.pancakeSwapBaseUrl = "https://exchange.pancakeswap.finance/#/swap?"
 
+        self.bscscanTransactionBaseUrl = "https://www.bscscan.com/tx/"
+
         self.tokenUrl = "/token/"
 
         self.idDesc = "id"
@@ -147,8 +149,6 @@ class cmc:
 
         #pancakeswap router
         self.panRouterContractAddress = "0x10ED43C718714eb63d5aA57B78B54704E256024E"
-        self.pancakeSwapContract = "0x10ED43C718714eb63d5aA57B78B54704E256024E".lower()
-        print(self.pancakeSwapContract)
         self.getPriceAddress = "0xBCfCcbde45cE874adCB698cC183deBcF17952812"
 
         self.noPairAddress = "0x0000000000000000000000000000000000000000"
@@ -167,75 +167,54 @@ class cmc:
         self.tokenAbi = '[{"inputs":[{"internalType":"string","name":"_name","type":"string"},{"internalType":"string","name":"_symbol","type":"string"},{"internalType":"uint256","name":"_decimals","type":"uint256"},{"internalType":"uint256","name":"_supply","type":"uint256"},{"internalType":"uint256","name":"_txFee","type":"uint256"},{"internalType":"uint256","name":"_burnFee","type":"uint256"},{"internalType":"uint256","name":"_charityFee","type":"uint256"},{"internalType":"address","name":"_FeeAddress","type":"address"},{"internalType":"address","name":"tokenOwner","type":"address"}],"stateMutability":"nonpayable","type":"constructor"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"owner","type":"address"},{"indexed":true,"internalType":"address","name":"spender","type":"address"},{"indexed":false,"internalType":"uint256","name":"value","type":"uint256"}],"name":"Approval","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"previousOwner","type":"address"},{"indexed":true,"internalType":"address","name":"newOwner","type":"address"}],"name":"OwnershipTransferred","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"from","type":"address"},{"indexed":true,"internalType":"address","name":"to","type":"address"},{"indexed":false,"internalType":"uint256","name":"value","type":"uint256"}],"name":"Transfer","type":"event"},{"inputs":[],"name":"FeeAddress","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"_BURN_FEE","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"_CHARITY_FEE","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"_TAX_FEE","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"_owner","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"owner","type":"address"},{"internalType":"address","name":"spender","type":"address"}],"name":"allowance","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"spender","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"approve","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"account","type":"address"}],"name":"balanceOf","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"_value","type":"uint256"}],"name":"burn","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"decimals","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"spender","type":"address"},{"internalType":"uint256","name":"subtractedValue","type":"uint256"}],"name":"decreaseAllowance","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"tAmount","type":"uint256"}],"name":"deliver","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"account","type":"address"}],"name":"excludeAccount","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"account","type":"address"}],"name":"includeAccount","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"spender","type":"address"},{"internalType":"uint256","name":"addedValue","type":"uint256"}],"name":"increaseAllowance","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"account","type":"address"}],"name":"isCharity","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"account","type":"address"}],"name":"isExcluded","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"account","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"mint","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"name","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"owner","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"tAmount","type":"uint256"},{"internalType":"bool","name":"deductTransferFee","type":"bool"}],"name":"reflectionFromToken","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"renounceOwnership","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"account","type":"address"}],"name":"setAsCharityAccount","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"symbol","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"rAmount","type":"uint256"}],"name":"tokenFromReflection","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"totalBurn","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"totalCharity","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"totalFees","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"totalSupply","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"recipient","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"transfer","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"sender","type":"address"},{"internalType":"address","name":"recipient","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"transferFrom","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"newOwner","type":"address"}],"name":"transferOwnership","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"_txFee","type":"uint256"},{"internalType":"uint256","name":"_burnFee","type":"uint256"},{"internalType":"uint256","name":"_charityFee","type":"uint256"}],"name":"updateFee","outputs":[],"stateMutability":"nonpayable","type":"function"}]'
 
         self.pancakeSwapRouter = self.web3.eth.contract(address=self.panRouterContractAddress, abi=self.panabi)
-        self.oneDollar = self.web3.toWei("1", "ether")
 
-        self.tokensToSell = 10 ** 18
+        self.tokenAmount = 10 ** 18
+        self.tokenDecimalsDesc = "tokenDecimals"
 
-        self.bnbAmountToBuy = 0.1
+        self.bnbAmountToBuy = 0.01
+        printInfo(f"BNB amount to buy for each crypto = {self.bnbAmountToBuy} BNB", bcolors.WARN)
         self.wbnbContract = self.web3.toChecksumAddress("0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c")
         self.usdtContract = self.web3.toChecksumAddress("0x55d398326f99059ff775485246999027b3197955")
 
         self.contract = self.web3.eth.contract(address=self.getPriceAddress, abi=self.getPriceABI)
 
-        self.pairAddressDesc = "pairAddress"
-
         self.senderAddress = "0xa9eC6E2129267f01a2E772E208F8b0Ed802748D0"
         self.privateKey = getPrivateKey()
 
 
-    def calcSell(self, tokensToSell, tokenAddress):
-        BNBTokenAddress = "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c" # BNB
-
-        tokenRouter = self.web3.eth.contract(address=tokenAddress, abi=self.tokenAbi)
-        tokenDecimals = tokenRouter.functions.decimals().call()
-
-        print(tokenDecimals)
-        
-        tokensToSell = self.setDecimals(tokensToSell, tokenDecimals)
-        print(tokensToSell)
-        amountOut = 0
-
-        try:
-            router = self.web3.eth.contract(address=self.panRouterContractAddress, abi=self.panabi)
-            amountOut = router.functions.getAmountsOut(tokensToSell, [tokenAddress ,self.wbnbContract]).call()
-            print(amountOut)
-            amountOut =  self.web3.fromWei(amountOut[1], "ether")
-        except:
-            print("error2")
-
-        return amountOut
-
-    
     def getPancakeSwapPrice(self, token):
 
         token = self.web3.toChecksumAddress(token)
 
         if token == self.wbnbContract or token == self.usdtContract:
             return 0
-
-        """
-        try:
-            tokenRouter = self.web3.eth.contract(address=token, abi=self.tokenAbi)
-            tokenDecimals = tokenRouter.functions.decimals().call()
-        except:
-            tokenDecimals = 18
-        """
         
         # tokensToSell = 10 ** tokenDecimals # self.setDecimals(1, tokenDecimals)
 
         try:
-            tokenAmountOut = self.pancakeSwapRouter.functions.getAmountsOut(self.tokensToSell, [token, self.wbnbContract]).call()
-            tokenPriceInBNB =  tokenAmountOut[1] / self.tokensToSell
+            tokenAmountOut = self.pancakeSwapRouter.functions.getAmountsOut(self.tokenAmount, [token, self.wbnbContract]).call()
+            tokenPriceInBNB =  self.web3.fromWei(tokenAmountOut[1], "ether") # / (self.tokenAmount / tokenAmountOut[0])
 
-            #BNBamountOut = self.pancakeSwapRouter.functions.getAmountsOut(self.oneDollar, [self.wbnbContract, self.usdtContract]).call()
-            bnbPriceInUSDT = 1 # BNBamountOut[1] / BNBamountOut[0]
+            # Slow
+            #BNBamountOut = self.pancakeSwapRouter.functions.getAmountsOut(self.tokenAmount, [self.wbnbContract, self.usdtContract]).call()
+            bnbPriceInUSDT = 1 # self.web3.fromWei(BNBamountOut[1], "ether")
 
         except:
-            bnbPriceInUSDT = 0
-            tokenPriceInBNB = 0
+            return 0
             #printInfo(f"Error calculando el precio en getPancakeSwapPrice()")
 
         return bnbPriceInUSDT * tokenPriceInBNB
+
+
+    def getTokenDecimals(self, token):
+
+        try:
+            tokenRouter = self.web3.eth.contract(address=token, abi=self.tokenAbi)
+            tokenDecimals = tokenRouter.functions.decimals().call()
+        except:
+            tokenDecimals = 100
+
+        return tokenDecimals
 
 
     def setDecimals(self, number, decimals):
@@ -253,51 +232,6 @@ class cmc:
             numberDecimals += "0"
 
         return int(numberAbs + numberDecimals)
-
-
-    def test_getPancakeSwapPrice(self, token="0xa49e44976c236beb51a1f818d49b9b9759ed97b1"):
-
-        token = self.web3.toChecksumAddress(token)
-
-        bnbPrice = self.getPancakeSwapPrice() # // query pancakeswap to get the price of BNB in USDT
-        print(f"CURRENT BNB PRICE: {bnbPrice}")
-        priceInBnb = self.calcSell(1, token)/1 # // calculate TOKEN price in BNB, sometimes setting only 1 instead of 1000 cause errors
-        print( f"SHIT_TOKEN VALUE IN BNB :  {priceInBnb}  | Just convert it to USD")
-        print(f"SHIT_TOKEN VALUE IN USD: {priceInBnb*bnbPrice}") # // convert the token price from BNB to USD based on the retrived BNB value
-
-
-    def uniswapConnection(self):
-
-        # IPCProvider:
-        w3 = Web3(Web3.IPCProvider('/home/pi/.ethereum/geth.ipc'))
-
-        print(w3.isConnected())
-
-        # HTTPProvider:
-        w3 = Web3(Web3.HTTPProvider('http://127.0.0.1:8545'))
-
-        print(w3.isConnected())
-
-        # WebsocketProvider:
-        w3 = Web3(Web3.WebsocketProvider('ws://127.0.0.1:8546'))
-
-        print(w3.isConnected())
-
-        address = None          # or None if you're not going to make transactions
-        private_key = None  # or None if you're not going to make transactions
-        version = 2                       # specify which version of Uniswap to use
-        provider = w3    # can also be set through the environment variable `PROVIDER`
-        uniswap = Uniswap(address=address, private_key=private_key, version=version, provider=provider)
-
-        # Some token addresses we'll be using later in this guide
-        eth = "0x0000000000000000000000000000000000000000"
-        bat = "0x0D8775F648430679A709E98d2b0Cb6250d2887EF"
-        dai = "0x6B175474E89094C44Da98b954EedeAC495271d0F"
-
-        # Returns the amount of DAI you get for 1 ETH (10^18 wei)
-        v = uniswap.get_price_input(eth, dai, 10**18)
-        print(v)
-        exit()
 
 
     def core(self):
@@ -347,6 +281,9 @@ class cmc:
                     self.data[row[self.idDesc]][self.bscContractDesc] = row[self.bscContractDesc]
 
                     self.data[row[self.idDesc]][self.priceDesc] = self.getPancakeSwapPrice(token=row[self.bscContractDesc])
+
+                    #printInfo(f"{self.data[row[self.idDesc]][self.symbolNameDesc]} = {self.data[row[self.idDesc]][self.priceDesc]} BNB", bcolors.OK)
+                    #continue
 
 
                 # If "previous" values are set
@@ -444,10 +381,8 @@ class cmc:
 
                         if isToBuy:
                             self.buyToken(token=self.data[row[self.idDesc]][self.bscContractDesc])
-                            printInfo("Compra realizada", bcolors.OKMSG)
                         else:
                             self.sellToken(token=self.data[row[self.idDesc]][self.bscContractDesc])
-                            printInfo("Venta realizada", bcolors.OKMSG)
 
             counter += 1
 
@@ -484,9 +419,7 @@ class cmc:
         self.csvBscContractTokens = df[self.idDesc].tolist()
 
         # Filter out NaN values
-        df = df[df[self.bscContractDesc].notnull()]
-
-        return df
+        return df[df[self.bscContractDesc].notnull()]
 
 
     # Insert token data if not in .csv file already
@@ -498,10 +431,8 @@ class cmc:
 
             if self.binanceSmartChainDesc in t.keys():
                 bscContract = t[self.binanceSmartChainDesc]
-                pairAddress = self.getPairAddress(token=bscContract)
             else:
                 bscContract = None
-                pairAddress = None
 
             tokenData = {
                 self.idDesc: int(row[self.idDesc]),
@@ -509,7 +440,6 @@ class cmc:
                 self.symbolNameDesc: row[self.symbolNameDesc],
                 self.slugDesc: row[self.slugDesc],
                 self.bscContractDesc: bscContract,
-                self.pairAddressDesc: pairAddress
             }
 
             output = pd.DataFrame()
@@ -517,7 +447,7 @@ class cmc:
 
             output.to_csv(self.bscContractsCsv, index=False, columns=tokenData.keys(), mode="a", header=headers)
 
-            printInfo(f"Contract insertado para {row[self.symbolNameDesc]} ({bscContract} - {pairAddress})", bcolors.OK)
+            printInfo(f"Contract insertado para {row[self.symbolNameDesc]} ({bscContract})", bcolors.OK)
 
             time.sleep(2)
 
@@ -553,8 +483,6 @@ class cmc:
 
                 for i, data in rawData.items():
                     for desc, listOfDicts in data.items():
-
-                        # print(desc)
 
                         if desc == self.cryptoCurrencyListDesc:
                             
@@ -718,17 +646,22 @@ class cmc:
 
     def sendWhatsapp(self, message):
 
-        client = Client(self.account_sid, self.auth_token)
+        try:
 
-        for number in self.mobileNumbers:
-        
-            message = client.messages.create( 
-                                        from_='whatsapp:+14155238886',  
-                                        body=message,      
-                                        to='whatsapp:' + number 
-                                    ) 
-        
-            # print(message.sid)
+            client = Client(self.account_sid, self.auth_token)
+
+            for number in self.mobileNumbers:
+            
+                message = client.messages.create( 
+                                            from_='whatsapp:+14155238886',  
+                                            body=message,      
+                                            to='whatsapp:' + number 
+                                        ) 
+            
+                #printInfo(f"WhatsApp message: {message.sid}", bcolors.OK)
+
+        except:
+            printInfo(f"No se ha/n podido enviar mensaje/s de WhatsApp", bcolors.ERRMSG)
 
 
     def buyToken(self, token):
@@ -736,34 +669,20 @@ class cmc:
         while True:
 
             try:
-
-                web3 = Web3(Web3.HTTPProvider(self.bsc))
-
-                print(web3.isConnected())
                 
-                balance = web3.eth.get_balance(self.senderAddress)
-                humanReadable = web3.fromWei(balance,'ether')
+                balance = self.web3.eth.get_balance(self.senderAddress)
+                humanReadable = self.web3.fromWei(balance,'ether')
 
-                printInfo(f"BNB amount: {humanReadable}", bcolors.WARN)
+                printInfo(f"Total BNB amount: {humanReadable}", bcolors.WARN)
                 
                 #Contract Address of Token we want to buy
-                tokenToBuy = web3.toChecksumAddress(token)        # web3.toChecksumAddress("0x6615a63c260be84974166a5eddff223ce292cf3d")
-                spend = web3.toChecksumAddress(self.wbnbContract) # wbnb contract
+                tokenToBuy = self.web3.toChecksumAddress(token)        # web3.toChecksumAddress("0x6615a63c260be84974166a5eddff223ce292cf3d")
+                spend = self.web3.toChecksumAddress(self.wbnbContract) # wbnb contract
                 
                 #Setup the PancakeSwap contract
-                contract = web3.eth.contract(address=self.panRouterContractAddress, abi=self.panabi)
+                contract = self.web3.eth.contract(address=self.panRouterContractAddress, abi=self.panabi)
 
-                nonce = web3.eth.get_transaction_count(self.senderAddress)
-                
-                start = time.time()
-
-                """
-                print(tokenToBuy)
-                print(spend)
-                print(contract)
-                print(nonce)
-                print(start)
-                """
+                nonce = self.web3.eth.get_transaction_count(self.senderAddress)
 
                 pancakeswap2_txn = contract.functions.swapExactETHForTokensSupportingFeeOnTransferTokens( # swapExactETHForTokens
                 0, # set to 0, or specify minimum amount of tokeny you want to receive - consider decimals!!!
@@ -772,16 +691,17 @@ class cmc:
                 (int(time.time()) + 10000)
                 ).buildTransaction({
                 'from': self.senderAddress,
-                'value': web3.toWei(self.bnbAmountToBuy,'ether'), # This is the Token(BNB) amount you want to Swap from
+                'value': self.web3.toWei(self.bnbAmountToBuy,'ether'), # This is the Token(BNB) amount you want to Swap from
                 'gas': 250000,
-                'gasPrice': web3.toWei('5','gwei'),
+                'gasPrice': self.web3.toWei('5','gwei'),
                 'nonce': nonce,
                 })
                     
-                signed_txn = web3.eth.account.sign_transaction(pancakeswap2_txn, private_key=self.privateKey)
-                tx_token = web3.eth.send_raw_transaction(signed_txn.rawTransaction)
+                signed_txn = self.web3.eth.account.sign_transaction(pancakeswap2_txn, private_key=self.privateKey)
+                tx_token = self.web3.eth.send_raw_transaction(signed_txn.rawTransaction)
 
-                print(web3.toHex(tx_token))
+
+                printInfo(f"Compra realizada! Transacción --> {self.bscscanTransactionBaseUrl}{self.web3.toHex(tx_token)}", bcolors.OKMSG)
 
                 break
 
@@ -796,60 +716,56 @@ class cmc:
 
             try:
 
-                web3 = Web3(Web3.HTTPProvider(self.bsc))
-
-                print(web3.isConnected())
-
                 sender_address = self.senderAddress #TokenAddress of holder
-                spend = web3.toChecksumAddress(self.wbnbContract)  #WBNB Address
-
+                spend = self.web3.toChecksumAddress(self.wbnbContract)  #WBNB Address
 
                 #Get BNB Balance
-                balance = web3.eth.get_balance(sender_address)
-                humanReadable = web3.fromWei(balance,'ether')
+                balance = self.web3.eth.get_balance(sender_address)
+                humanReadable = self.web3.fromWei(balance,'ether')
 
-                printInfo(f"BNB amount: {humanReadable}", bcolors.WARN)
+                printInfo(f"Total BNB amount: {humanReadable}", bcolors.WARN)
                 
                 #Contract id is the new token we are swaping to
                 #contract_id = web3.toChecksumAddress("0xc9849e6fdb743d08faee3e34dd2d1bc69ea11a51")
-                contract_id = web3.toChecksumAddress(token)
+                contract_id = self.web3.toChecksumAddress(token)
                 
                 #Setup the PancakeSwap contract
-                contract = web3.eth.contract(address=self.panRouterContractAddress, abi=self.panabi)
+                contract = self.web3.eth.contract(address=self.panRouterContractAddress, abi=self.panabi)
 
                 #Create token Instance for Token
-                sellTokenContract = web3.eth.contract(contract_id, abi=self.sellAbi)
+                sellTokenContract = self.web3.eth.contract(contract_id, abi=self.sellAbi)
 
                 #Get Token Balance
                 balance = sellTokenContract.functions.balanceOf(sender_address).call()
                 symbol = sellTokenContract.functions.symbol().call()
-                readable = web3.fromWei(balance,'ether')
-                print("Balance: " + str(readable) + " " + symbol)
+                readable = self.web3.fromWei(balance,'ether')
 
                 if int(readable) == 0:
                     printInfo(f"El balance de {symbol} es 0 y no hay nada que vender", bcolors.WARN)
                     break
 
+                printInfo(f"Balance: {readable} {symbol}", bcolors.WARN)
+
                 #Enter amount of token to sell
-                tokenValue = web3.toWei(readable, 'ether')
+                tokenValue = self.web3.toWei(readable, 'ether')
 
                 #Approve Token before Selling
-                tokenValue2 = web3.fromWei(tokenValue, 'ether')
+                tokenValue2 = self.web3.fromWei(tokenValue, 'ether')
                 start = time.time()
                 approve = sellTokenContract.functions.approve(self.panRouterContractAddress, balance).buildTransaction({
                             'from': sender_address,
-                            'gasPrice': web3.toWei('5','gwei'),
-                            'nonce': web3.eth.get_transaction_count(sender_address),
+                            'gasPrice': self.web3.toWei('5','gwei'),
+                            'nonce': self.web3.eth.get_transaction_count(sender_address),
                             })
 
-                signed_txn = web3.eth.account.sign_transaction(approve, private_key=self.privateKey)
-                tx_token = web3.eth.send_raw_transaction(signed_txn.rawTransaction)
-                print("Approved: " + web3.toHex(tx_token))
+                signed_txn = self.web3.eth.account.sign_transaction(approve, private_key=self.privateKey)
+                tx_token = self.web3.eth.send_raw_transaction(signed_txn.rawTransaction)
+                printInfo(f"Venta aprobada --> {self.bscscanTransactionBaseUrl}{self.web3.toHex(tx_token)}", bcolors.OK)
 
                 # Wait after approve 10 seconds before sending transaction
                 time.sleep(10)
 
-                print(f"Swapping {tokenValue2} {symbol} for BNB")
+                printInfo(f"Canjeando {tokenValue2} {symbol} por BNB", bcolors.WARN)
                 # Swaping exact Token for ETH 
 
                 pancakeswap2_txn = contract.functions.swapExactTokensForETHSupportingFeeOnTransferTokens( # swapExactTokensForETH
@@ -860,48 +776,17 @@ class cmc:
 
                             ).buildTransaction({
                             'from': sender_address,
-                            'gasPrice': web3.toWei('5','gwei'),
-                            'nonce': web3.eth.get_transaction_count(sender_address),
+                            'gasPrice': self.web3.toWei('5','gwei'),
+                            'nonce': self.web3.eth.get_transaction_count(sender_address),
                             })
                     
-                signed_txn = web3.eth.account.sign_transaction(pancakeswap2_txn, private_key=self.privateKey)
-                tx_token = web3.eth.send_raw_transaction(signed_txn.rawTransaction)
-                print(f"Sold {symbol}: " + web3.toHex(tx_token))
+                signed_txn = self.web3.eth.account.sign_transaction(pancakeswap2_txn, private_key=self.privateKey)
+                tx_token = self.web3.eth.send_raw_transaction(signed_txn.rawTransaction)
+
+                printInfo(f"Venta realizada para {symbol}! Transacción --> {self.bscscanTransactionBaseUrl}{self.web3.toHex(tx_token)}", bcolors.OKMSG)
 
                 break
 
             except:
                 printInfo("Error en sellToken()", bcolors.ERRMSG)
                 time.sleep(self.delay)
-
-
-    def getPairAddress(self, token):
-
-        token = self.web3.toChecksumAddress(token)
-        pairAddress = self.contract.functions.getPair(token, self.usdtContract).call()
-
-        if pairAddress == self.noPairAddress:
-            pairAddress = None
-
-        return pairAddress
-
-
-    def getBscscanReserves(self, pairAddress):
-
-        if pairAddress == self.noPairAddress:
-            printInfo("No hay pair", bcolors.ERRMSG)
-            exit()
-
-        reservesContract = self.web3.eth.contract(address=pairAddress, abi=self.getReservedABI)
-        reserves = reservesContract.functions.getReserves().call()
-
-        return reserves
-
-        if reserves[0] <= 0:
-            printInfo(f"Dividiendo por = {reserves[1]}", bcolors.WARN)
-        else:
-            currentPrice = reserves[1] / reserves[0]
-
-        #printInfo(f"{currentPrice} $", bcolors.OKMSG)
-
-        return currentPrice

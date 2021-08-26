@@ -3,8 +3,8 @@ import triggerClass as tC
 # -------------------------------------------------------------------------------------------
 
 e = tC.cmc(
-    buyTrigger=-10,  # %
-    sellTrigger=100,  # %
+    buyTrigger=-0.5,  # %
+    sellTrigger=-100,  # %
     isTrading=False,
     sendNotifications=True,
     tradingHistoryCsv="tradingHistory.csv",
@@ -12,4 +12,4 @@ e = tC.cmc(
     delay=30
 )
 
-e.test_getCsvSymbolsNotSold()
+e.core()

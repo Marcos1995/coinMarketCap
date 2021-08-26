@@ -85,6 +85,7 @@ class cmc:
         self.delay = delay
 
         self.csvBscContractTokens = []
+        self.csvSymbolsNotSold = []
 
         self.cryptoCurrencyListDesc = "cryptoCurrencyList"
         self.statusDesc = "status"
@@ -134,6 +135,8 @@ class cmc:
         self.sellPercentageDiffDesc = "sellPercentageDiff"
         self.isSoldDesc = "isSold"
         self.isTradingDesc = "isTrading"
+
+        printInfo(f"{self.isTradingDesc} = {self.isTrading}", bcolors.WARN)
 
         self.separator = ","
 
@@ -313,13 +316,16 @@ class cmc:
                 # If "previous" values are set
                 else:
 
-                    if not writeTradingHistoryHeaders:
-                        if dfCsvSymbolsNotSold[self.idDesc].eq(row[self.idDesc]).any():
-                            print(dfCsvSymbolsNotSold[self.idDesc].eq(row[self.idDesc]))
-                            prevPrice = float(dfCsvSymbolsNotSold[dfCsvSymbolsNotSold[self.idDesc] == row[self.idDesc]][self.priceDesc])
-                            printInfo(f"El symbol {self.data[row[self.idDesc]][self.symbolNameDesc]} ya tiene prevPrice que es {prevPrice} BNB")
+                    prevPrice = self.data[row[self.idDesc]][self.priceDesc]
 
-                    self.data[row[self.idDesc]][self.prevPriceDesc] = self.data[row[self.idDesc]][self.priceDesc]
+                    print(self.csvSymbolsNotSold)
+
+                    if row[self.idDesc] in self.csvSymbolsNotSold:
+
+                            prevPrice = float(dfCsvSymbolsNotSold[dfCsvSymbolsNotSold[self.idDesc] == row[self.idDesc]][self.priceDesc])
+                            printInfo(f"El symbol {self.data[row[self.idDesc]][self.symbolNameDesc]} ya tiene prevPrice que es {prevPrice} BNB", bcolors.OK)
+
+                    self.data[row[self.idDesc]][self.prevPriceDesc] = prevPrice
                     self.data[row[self.idDesc]][self.priceDesc] = self.getPancakeSwapPrice(token=row[self.bscContractDesc])
 
                     if self.data[row[self.idDesc]][self.priceDesc] == 0 or self.data[row[self.idDesc]][self.prevPriceDesc] == 0:
@@ -330,7 +336,38 @@ class cmc:
                     percentageDiff = formatPercentages(percengeDiffWoFormat)
 
                     # If we should buy or sell a crypto
-                    if percentageDiff >= self.sellTrigger and row[self.idDesc] in dfCsvSymbolsNotSold: # sell
+                    if percentageDiff <= self.buyTrigger and row[self.idDesc] not in self.csvSymbolsNotSold: # buy
+                        
+                        color = bcolors.ERR
+                        HTMLcolor = "red"
+                        tradeAction = "Comprar"
+                        urlAction = "outputCurrency"
+                        isToBuy = True
+
+                        # -------------------------------------------------------------------
+
+                        # Prepare data to insert in .csv file
+                        tempRow = {}
+
+                        for x, y in row.items():
+                            tempRow[x] = y
+
+                        tempRow[self.isSoldDesc] = 0
+                        tempRow[self.isTradingDesc] = boolToInt(val=self.isTrading)
+                        tempRow[self.priceDesc] = self.data[row[self.idDesc]][self.priceDesc]
+                        tempRow[self.sellPriceDesc] = None
+                        tempRow[self.percentageDiffDesc] = percentageDiff
+                        tempRow[self.sellPercentageDiffDesc] = None
+                        tempRow[self.datetimeDesc] = dt.datetime.now()
+                        tempRow[self.sellDatetimeDesc] = None
+
+                        # To dataFrame
+                        tempDf = pd.DataFrame([tempRow])
+
+                        tempDf.to_csv(self.tradingHistoryCsv, index=False, columns=list(tempDf), mode="a", header=writeTradingHistoryHeaders)
+                        writeTradingHistoryHeaders = False
+
+                    elif percentageDiff >= self.sellTrigger and row[self.idDesc] in self.csvSymbolsNotSold: # sell
 
                         color = bcolors.OK
                         HTMLcolor = "green"
@@ -354,43 +391,15 @@ class cmc:
                                     writer.writerow(r)
                                     continue
 
-                                if int(r[self.idDesc]) == int(row[self.idDesc]) and int(r[self.isSoldDesc]) == 0:
-                                    r[self.isSoldDesc], r[self.sellPercentageDiffDesc] = 1, percentageDiff
+                                if int(r[self.idDesc]) == int(row[self.idDesc]) and int(r[self.isTradingDesc]) == boolToInt(val=self.isTrading) and int(r[self.isSoldDesc]) == 0:
+                                    r[self.isSoldDesc] = 1
+                                    r[self.sellPriceDesc] = self.data[row[self.idDesc]][self.priceDesc]
+                                    r[self.sellPercentageDiffDesc] = percentageDiff
+                                    r[self.sellDatetimeDesc] = dt.datetime.now()
 
                                 writer.writerow(r)
 
                         shutil.move(tempfile.name, self.tradingHistoryCsv)
-
-
-                    elif percentageDiff <= self.buyTrigger and row[self.idDesc] not in dfCsvSymbolsNotSold: # buy
-                        
-                        color = bcolors.ERR
-                        HTMLcolor = "red"
-                        tradeAction = "Comprar"
-                        urlAction = "outputCurrency"
-                        isToBuy = True
-
-                        # -------------------------------------------------------------------
-
-                        # Prepare data to insert in .csv file
-                        tempRow = {}
-
-                        for x, y in row.items():
-                            tempRow[x] = y
-
-                        tempRow[self.isSoldDesc] = 0
-                        tempRow[self.isTradingDesc] = self.isTrading
-                        tempRow[self.priceDesc] = self.data[row[self.idDesc]][self.priceDesc]
-                        tempRow[self.sellPriceDesc] = None
-                        tempRow[self.percentageDiffDesc] = percentageDiff
-                        tempRow[self.sellPercentageDiffDesc] = None
-                        tempRow[self.datetimeDesc] = dt.datetime.now()
-                        tempRow[self.sellDatetimeDesc] = None
-
-                        tempDf = pd.DataFrame([tempRow])
-
-                        tempDf.to_csv(self.tradingHistoryCsv, index=False, columns=list(tempDf), mode="a", header=writeTradingHistoryHeaders)
-                        writeTradingHistoryHeaders = False
 
                     else: # Nothing to do, so let's continue with the other coin
                         continue
@@ -475,7 +484,11 @@ class cmc:
 
         df[self.idDesc] = df[self.idDesc].astype(int)
 
+        print(df)
+
         df = df[(df[self.isTradingDesc] == boolToInt(val=self.isTrading)) & (df[self.isSoldDesc] == 0)]
+
+        self.csvSymbolsNotSold = df[self.idDesc].tolist()
 
         print(df)
 

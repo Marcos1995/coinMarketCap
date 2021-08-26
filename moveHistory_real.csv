@@ -1,0 +1,7 @@
+percentageDiff,sellPercentageDiff,isSold,id,symbol,symbolName,slug,bscContract
+-99.9939,,0,5407,KDG,Kingdom Game 4.0,kingdom-game-4,0x87a2d9a9a6b2d61b2a57798f1b4b2ddd19458fb6
+-96.3418,,0,5810,BZRX,bZx Protocol,bzx-protocol,0x4b87642aedf10b642be4663db842ecc5a88bf5ba
+-100.0000,803.7418,1,4045,CATT,Catex Token,catex-token,0x1fa385bcbffcf5e3cd132b3ea50437700fa86bfc
+-99.9901,,0,6742,SALE,DxSale Network,dxsale-network,0x97BB08BA41f033bEaac315169fc566AC9E0DAF52
+-91.1549,213.9916,1,3935,SRK,SparkPoint,sparkpoint,0xc3440c10c4f36f354eb591b19fafb4906d449b75
+-0.0002,,0,1027,ETH,Ethereum,ethereum,0x2170ed0880ac9a755fd29b2688956bd959f933f8

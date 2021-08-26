@@ -44,25 +44,51 @@ def getPrivateKey():
 
 class cmc:
 
-    def __init__(self, buyTrigger, sellTrigger, sendNotifications, isSimulation, moveHistoryCsv, bscContractsCsv, delay):
+    def __init__(self, buyTrigger, sellTrigger, isTrading: bool, sendNotifications: bool, tradingHistoryCsv, bscContractsCsv, delay):
 
+        # Check parameters
+        if not isinstance(buyTrigger, (int, float)):
+            printInfo(f"El parametro buyTrigger ha de ser de tipo int o float", bcolors.ERRMSG)
+            exit()
+
+        elif not isinstance(sellTrigger, (int, float)):
+            printInfo(f"El parametro sellTrigger ha de ser de tipo int o float", bcolors.ERRMSG)
+            exit()
+
+        elif not isinstance(isTrading, bool):
+            printInfo(f"El parametro isTrading ha de ser de tipo bool", bcolors.ERRMSG)
+            exit()
+
+        elif not isinstance(sendNotifications, bool):
+            printInfo(f"El parametro sendNotification ha de ser de tipo bool", bcolors.ERRMSG)
+            exit()
+
+        elif not isinstance(tradingHistoryCsv, str) or not tradingHistoryCsv.endswith(".csv"):
+            printInfo(f"El parametro tradingHistoryCsv ha de ser de tipo str acabado en .csv", bcolors.ERRMSG)
+            exit()
+
+        elif not isinstance(bscContractsCsv, str) or not bscContractsCsv.endswith(".csv"):
+            printInfo(f"El parametro bscContractsCsv ha de ser de tipo str acabado en .csv", bcolors.ERRMSG)
+            exit()
+
+        elif not isinstance(delay, (int, float)):
+            printInfo(f"El parametro delay ha de ser de tipo int o float", bcolors.ERRMSG)
+            exit()
+
+        # Assign parameters to self values
         self.buyTrigger = buyTrigger
         self.sellTrigger = sellTrigger
         self.sendNotifications = sendNotifications
-        self.isSimulation = isSimulation
-        self.moveHistoryCsv = moveHistoryCsv
+        self.isTrading = isTrading
+        self.tradingHistoryCsv = tradingHistoryCsv
         self.bscContractsCsv = bscContractsCsv
         self.delay = delay
 
         self.csvBscContractTokens = []
-        self.csvSymbolsNotSold = []
 
-        # self.typeDesc = "type"
-        self.dataDesc = "data"
         self.cryptoCurrencyListDesc = "cryptoCurrencyList"
         self.statusDesc = "status"
         self.timestampDesc = "timestamp"
-        self.prevTimestampDesc = "prevTimestamp"
 
         self.timestamp = None
         self.prevTimestamp = None
@@ -97,18 +123,17 @@ class cmc:
 
         self.priceDesc = "price"
         self.prevPriceDesc = "prevPrice"
+        self.sellPriceDesc = "sellPrice"
 
         self.percentChange1hDesc = "percentChange1h"
 
         self.datetimeDesc = "datetime"
-        self.prevDatetimeDesc = "prevDatetime"
-
-        self.lastUpdatedDesc = "lastUpdated"
-        self.prevLastUpdatedDesc = "prevLastUpdated"
+        self.sellDatetimeDesc = "sellDatetime"
 
         self.percentageDiffDesc = "percentageDiff"
         self.sellPercentageDiffDesc = "sellPercentageDiff"
         self.isSoldDesc = "isSold"
+        self.isTradingDesc = "isTrading"
 
         self.separator = ","
 
@@ -119,10 +144,10 @@ class cmc:
         self.binanceSmartChainDesc = "BinanceSmartChain"
 
         self.bscContractDesc = "bscContract"
-        self.reservedContract = "reservedContract"
 
         self.data = {}
 
+        # Send emails configuration
         self.port = 465
         self.smtp_server_domain_name = "smtp.gmail.com"
         self.sender_mail = "botNotifications1995@gmail.com"
@@ -151,8 +176,6 @@ class cmc:
         self.panRouterContractAddress = "0x10ED43C718714eb63d5aA57B78B54704E256024E"
         self.getPriceAddress = "0xBCfCcbde45cE874adCB698cC183deBcF17952812"
 
-        self.noPairAddress = "0x0000000000000000000000000000000000000000"
-
         #pancakeswap router abi 
         self.panabi = '[{"inputs":[{"internalType":"address","name":"_factory","type":"address"},{"internalType":"address","name":"_WETH","type":"address"}],"stateMutability":"nonpayable","type":"constructor"},{"inputs":[],"name":"WETH","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"tokenA","type":"address"},{"internalType":"address","name":"tokenB","type":"address"},{"internalType":"uint256","name":"amountADesired","type":"uint256"},{"internalType":"uint256","name":"amountBDesired","type":"uint256"},{"internalType":"uint256","name":"amountAMin","type":"uint256"},{"internalType":"uint256","name":"amountBMin","type":"uint256"},{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"deadline","type":"uint256"}],"name":"addLiquidity","outputs":[{"internalType":"uint256","name":"amountA","type":"uint256"},{"internalType":"uint256","name":"amountB","type":"uint256"},{"internalType":"uint256","name":"liquidity","type":"uint256"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"token","type":"address"},{"internalType":"uint256","name":"amountTokenDesired","type":"uint256"},{"internalType":"uint256","name":"amountTokenMin","type":"uint256"},{"internalType":"uint256","name":"amountETHMin","type":"uint256"},{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"deadline","type":"uint256"}],"name":"addLiquidityETH","outputs":[{"internalType":"uint256","name":"amountToken","type":"uint256"},{"internalType":"uint256","name":"amountETH","type":"uint256"},{"internalType":"uint256","name":"liquidity","type":"uint256"}],"stateMutability":"payable","type":"function"},{"inputs":[],"name":"factory","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"amountOut","type":"uint256"},{"internalType":"uint256","name":"reserveIn","type":"uint256"},{"internalType":"uint256","name":"reserveOut","type":"uint256"}],"name":"getAmountIn","outputs":[{"internalType":"uint256","name":"amountIn","type":"uint256"}],"stateMutability":"pure","type":"function"},{"inputs":[{"internalType":"uint256","name":"amountIn","type":"uint256"},{"internalType":"uint256","name":"reserveIn","type":"uint256"},{"internalType":"uint256","name":"reserveOut","type":"uint256"}],"name":"getAmountOut","outputs":[{"internalType":"uint256","name":"amountOut","type":"uint256"}],"stateMutability":"pure","type":"function"},{"inputs":[{"internalType":"uint256","name":"amountOut","type":"uint256"},{"internalType":"address[]","name":"path","type":"address[]"}],"name":"getAmountsIn","outputs":[{"internalType":"uint256[]","name":"amounts","type":"uint256[]"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"amountIn","type":"uint256"},{"internalType":"address[]","name":"path","type":"address[]"}],"name":"getAmountsOut","outputs":[{"internalType":"uint256[]","name":"amounts","type":"uint256[]"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"amountA","type":"uint256"},{"internalType":"uint256","name":"reserveA","type":"uint256"},{"internalType":"uint256","name":"reserveB","type":"uint256"}],"name":"quote","outputs":[{"internalType":"uint256","name":"amountB","type":"uint256"}],"stateMutability":"pure","type":"function"},{"inputs":[{"internalType":"address","name":"tokenA","type":"address"},{"internalType":"address","name":"tokenB","type":"address"},{"internalType":"uint256","name":"liquidity","type":"uint256"},{"internalType":"uint256","name":"amountAMin","type":"uint256"},{"internalType":"uint256","name":"amountBMin","type":"uint256"},{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"deadline","type":"uint256"}],"name":"removeLiquidity","outputs":[{"internalType":"uint256","name":"amountA","type":"uint256"},{"internalType":"uint256","name":"amountB","type":"uint256"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"token","type":"address"},{"internalType":"uint256","name":"liquidity","type":"uint256"},{"internalType":"uint256","name":"amountTokenMin","type":"uint256"},{"internalType":"uint256","name":"amountETHMin","type":"uint256"},{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"deadline","type":"uint256"}],"name":"removeLiquidityETH","outputs":[{"internalType":"uint256","name":"amountToken","type":"uint256"},{"internalType":"uint256","name":"amountETH","type":"uint256"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"token","type":"address"},{"internalType":"uint256","name":"liquidity","type":"uint256"},{"internalType":"uint256","name":"amountTokenMin","type":"uint256"},{"internalType":"uint256","name":"amountETHMin","type":"uint256"},{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"deadline","type":"uint256"}],"name":"removeLiquidityETHSupportingFeeOnTransferTokens","outputs":[{"internalType":"uint256","name":"amountETH","type":"uint256"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"token","type":"address"},{"internalType":"uint256","name":"liquidity","type":"uint256"},{"internalType":"uint256","name":"amountTokenMin","type":"uint256"},{"internalType":"uint256","name":"amountETHMin","type":"uint256"},{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"deadline","type":"uint256"},{"internalType":"bool","name":"approveMax","type":"bool"},{"internalType":"uint8","name":"v","type":"uint8"},{"internalType":"bytes32","name":"r","type":"bytes32"},{"internalType":"bytes32","name":"s","type":"bytes32"}],"name":"removeLiquidityETHWithPermit","outputs":[{"internalType":"uint256","name":"amountToken","type":"uint256"},{"internalType":"uint256","name":"amountETH","type":"uint256"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"token","type":"address"},{"internalType":"uint256","name":"liquidity","type":"uint256"},{"internalType":"uint256","name":"amountTokenMin","type":"uint256"},{"internalType":"uint256","name":"amountETHMin","type":"uint256"},{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"deadline","type":"uint256"},{"internalType":"bool","name":"approveMax","type":"bool"},{"internalType":"uint8","name":"v","type":"uint8"},{"internalType":"bytes32","name":"r","type":"bytes32"},{"internalType":"bytes32","name":"s","type":"bytes32"}],"name":"removeLiquidityETHWithPermitSupportingFeeOnTransferTokens","outputs":[{"internalType":"uint256","name":"amountETH","type":"uint256"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"tokenA","type":"address"},{"internalType":"address","name":"tokenB","type":"address"},{"internalType":"uint256","name":"liquidity","type":"uint256"},{"internalType":"uint256","name":"amountAMin","type":"uint256"},{"internalType":"uint256","name":"amountBMin","type":"uint256"},{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"deadline","type":"uint256"},{"internalType":"bool","name":"approveMax","type":"bool"},{"internalType":"uint8","name":"v","type":"uint8"},{"internalType":"bytes32","name":"r","type":"bytes32"},{"internalType":"bytes32","name":"s","type":"bytes32"}],"name":"removeLiquidityWithPermit","outputs":[{"internalType":"uint256","name":"amountA","type":"uint256"},{"internalType":"uint256","name":"amountB","type":"uint256"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"amountOut","type":"uint256"},{"internalType":"address[]","name":"path","type":"address[]"},{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"deadline","type":"uint256"}],"name":"swapETHForExactTokens","outputs":[{"internalType":"uint256[]","name":"amounts","type":"uint256[]"}],"stateMutability":"payable","type":"function"},{"inputs":[{"internalType":"uint256","name":"amountOutMin","type":"uint256"},{"internalType":"address[]","name":"path","type":"address[]"},{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"deadline","type":"uint256"}],"name":"swapExactETHForTokens","outputs":[{"internalType":"uint256[]","name":"amounts","type":"uint256[]"}],"stateMutability":"payable","type":"function"},{"inputs":[{"internalType":"uint256","name":"amountOutMin","type":"uint256"},{"internalType":"address[]","name":"path","type":"address[]"},{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"deadline","type":"uint256"}],"name":"swapExactETHForTokensSupportingFeeOnTransferTokens","outputs":[],"stateMutability":"payable","type":"function"},{"inputs":[{"internalType":"uint256","name":"amountIn","type":"uint256"},{"internalType":"uint256","name":"amountOutMin","type":"uint256"},{"internalType":"address[]","name":"path","type":"address[]"},{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"deadline","type":"uint256"}],"name":"swapExactTokensForETH","outputs":[{"internalType":"uint256[]","name":"amounts","type":"uint256[]"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"amountIn","type":"uint256"},{"internalType":"uint256","name":"amountOutMin","type":"uint256"},{"internalType":"address[]","name":"path","type":"address[]"},{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"deadline","type":"uint256"}],"name":"swapExactTokensForETHSupportingFeeOnTransferTokens","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"amountIn","type":"uint256"},{"internalType":"uint256","name":"amountOutMin","type":"uint256"},{"internalType":"address[]","name":"path","type":"address[]"},{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"deadline","type":"uint256"}],"name":"swapExactTokensForTokens","outputs":[{"internalType":"uint256[]","name":"amounts","type":"uint256[]"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"amountIn","type":"uint256"},{"internalType":"uint256","name":"amountOutMin","type":"uint256"},{"internalType":"address[]","name":"path","type":"address[]"},{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"deadline","type":"uint256"}],"name":"swapExactTokensForTokensSupportingFeeOnTransferTokens","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"amountOut","type":"uint256"},{"internalType":"uint256","name":"amountInMax","type":"uint256"},{"internalType":"address[]","name":"path","type":"address[]"},{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"deadline","type":"uint256"}],"name":"swapTokensForExactETH","outputs":[{"internalType":"uint256[]","name":"amounts","type":"uint256[]"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"amountOut","type":"uint256"},{"internalType":"uint256","name":"amountInMax","type":"uint256"},{"internalType":"address[]","name":"path","type":"address[]"},{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"deadline","type":"uint256"}],"name":"swapTokensForExactTokens","outputs":[{"internalType":"uint256[]","name":"amounts","type":"uint256[]"}],"stateMutability":"nonpayable","type":"function"},{"stateMutability":"payable","type":"receive"}]'
 
@@ -171,7 +194,7 @@ class cmc:
         self.tokenAmount = 10 ** 18
         self.tokenDecimalsDesc = "tokenDecimals"
 
-        self.bnbAmountToBuy = 0.01
+        self.bnbAmountToBuy = 0.001
         printInfo(f"BNB amount to buy for each crypto = {self.bnbAmountToBuy} BNB", bcolors.WARN)
         self.wbnbContract = self.web3.toChecksumAddress("0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c")
         self.usdtContract = self.web3.toChecksumAddress("0x55d398326f99059ff775485246999027b3197955")
@@ -263,11 +286,12 @@ class cmc:
             delayDone = False
 
             # Get .csv symbols not sold
-            if os.path.exists(self.moveHistoryCsv):
-                self.csvSymbolsNotSold = self.getCsvSymbolsNotSold()
-                writeHeaders = False
+            if os.path.exists(self.tradingHistoryCsv):
+                dfCsvSymbolsNotSold = self.test_getCsvSymbolsNotSold()
+                writeTradingHistoryHeaders = False
             else:
-                writeHeaders = True
+                dfCsvSymbolsNotSold = pd.DataFrame()
+                writeTradingHistoryHeaders = True
 
             # For each dataframe row
             for i, row in bscContractsDf.iterrows():
@@ -289,6 +313,12 @@ class cmc:
                 # If "previous" values are set
                 else:
 
+                    if not writeTradingHistoryHeaders:
+                        if dfCsvSymbolsNotSold[self.idDesc].eq(row[self.idDesc]).any():
+                            print(dfCsvSymbolsNotSold[self.idDesc].eq(row[self.idDesc]))
+                            prevPrice = float(dfCsvSymbolsNotSold[dfCsvSymbolsNotSold[self.idDesc] == row[self.idDesc]][self.priceDesc])
+                            printInfo(f"El symbol {self.data[row[self.idDesc]][self.symbolNameDesc]} ya tiene prevPrice que es {prevPrice} BNB")
+
                     self.data[row[self.idDesc]][self.prevPriceDesc] = self.data[row[self.idDesc]][self.priceDesc]
                     self.data[row[self.idDesc]][self.priceDesc] = self.getPancakeSwapPrice(token=row[self.bscContractDesc])
 
@@ -300,7 +330,7 @@ class cmc:
                     percentageDiff = formatPercentages(percengeDiffWoFormat)
 
                     # If we should buy or sell a crypto
-                    if percentageDiff >= self.sellTrigger and row[self.idDesc] in self.csvSymbolsNotSold: # sell
+                    if percentageDiff >= self.sellTrigger and row[self.idDesc] in dfCsvSymbolsNotSold: # sell
 
                         color = bcolors.OK
                         HTMLcolor = "green"
@@ -313,9 +343,9 @@ class cmc:
                         # Update .csv setting the new cells value
                         tempfile = NamedTemporaryFile(mode='w', delete=False)
 
-                        df = pd.read_csv(self.moveHistoryCsv, sep=self.separator)
+                        df = pd.read_csv(self.tradingHistoryCsv, sep=self.separator)
 
-                        with open(self.moveHistoryCsv, 'r', newline='') as csvfile, tempfile:
+                        with open(self.tradingHistoryCsv, 'r', newline='') as csvfile, tempfile:
                             reader = csv.DictReader(csvfile, fieldnames=list(df), delimiter=self.separator)
                             writer = csv.DictWriter(tempfile, fieldnames=list(df), delimiter=self.separator, lineterminator='\n')
                             for r in reader:
@@ -329,10 +359,10 @@ class cmc:
 
                                 writer.writerow(r)
 
-                        shutil.move(tempfile.name, self.moveHistoryCsv)
+                        shutil.move(tempfile.name, self.tradingHistoryCsv)
 
 
-                    elif percentageDiff <= self.buyTrigger and row[self.idDesc] not in self.csvSymbolsNotSold: # buy
+                    elif percentageDiff <= self.buyTrigger and row[self.idDesc] not in dfCsvSymbolsNotSold: # buy
                         
                         color = bcolors.ERR
                         HTMLcolor = "red"
@@ -344,17 +374,23 @@ class cmc:
 
                         # Prepare data to insert in .csv file
                         tempRow = {}
-                        tempRow[self.percentageDiffDesc] = percentageDiff
-                        tempRow[self.sellPercentageDiffDesc] = None
-                        tempRow[self.isSoldDesc] = 0
 
                         for x, y in row.items():
                             tempRow[x] = y
 
+                        tempRow[self.isSoldDesc] = 0
+                        tempRow[self.isTradingDesc] = self.isTrading
+                        tempRow[self.priceDesc] = self.data[row[self.idDesc]][self.priceDesc]
+                        tempRow[self.sellPriceDesc] = None
+                        tempRow[self.percentageDiffDesc] = percentageDiff
+                        tempRow[self.sellPercentageDiffDesc] = None
+                        tempRow[self.datetimeDesc] = dt.datetime.now()
+                        tempRow[self.sellDatetimeDesc] = None
+
                         tempDf = pd.DataFrame([tempRow])
 
-                        tempDf.to_csv(self.moveHistoryCsv, index=False, columns=list(tempDf), mode="a", header=writeHeaders)
-                        writeHeaders = False
+                        tempDf.to_csv(self.tradingHistoryCsv, index=False, columns=list(tempDf), mode="a", header=writeTradingHistoryHeaders)
+                        writeTradingHistoryHeaders = False
 
                     else: # Nothing to do, so let's continue with the other coin
                         continue
@@ -362,25 +398,48 @@ class cmc:
                     #tokens = self.getTokens(cryptoSlug=self.data[row[self.idDesc]][self.slugDesc])
 
                     printInfo(f"{percentageDiff} % --- {tradeAction} {self.data[row[self.idDesc]][self.symbolNameDesc]} ({self.data[row[self.idDesc]][self.symbolDesc]}"
-                    + f" - {row[self.idDesc]}) // Ahora = {self.data[row[self.idDesc]][self.priceDesc]} $, Antes = {self.data[row[self.idDesc]][self.prevPriceDesc]} $"
-                    + f" (https://pancakeswap.finance/swap?inputCurrency={self.data[row[self.idDesc]][self.bscContractDesc]})", color)
+                    + f" - {row[self.idDesc]}) // Ahora = {self.data[row[self.idDesc]][self.priceDesc]} BNB, Antes = {self.data[row[self.idDesc]][self.prevPriceDesc]} BNB", color)
+                    
+                    printInfo(f"{self.pancakeSwapBaseUrl}inputCurrency={self.data[row[self.idDesc]][self.bscContractDesc]}", color)
 
                     #if len(tokens) > 0:
 
-                    if not self.isSimulation: # and self.binanceSmartChainDesc in tokens.keys():
+                    if self.isTrading: # and self.binanceSmartChainDesc in tokens.keys():
 
                         if self.sendNotifications:
                             self.sendEmails(
                                 tradeAction=tradeAction, urlAction=urlAction, cryptoData=self.data[row[self.idDesc]],
-                                percentageDiff=percentageDiff, color=HTMLcolor, tokens=self.data[row[self.idDesc]][self.bscContractDesc]
+                                percentageDiff=percentageDiff, color=HTMLcolor, token=self.data[row[self.idDesc]][self.bscContractDesc]
                             )
 
                         if not delayDone:
                             delayDone = True
-                            #time.sleep(self.delay * 2)
+                            #time.sleep(self.delay * 3) # 4
 
                         if isToBuy:
                             self.buyToken(token=self.data[row[self.idDesc]][self.bscContractDesc])
+                            time.sleep(30)
+                            self.buyToken(token=self.data[row[self.idDesc]][self.bscContractDesc])
+                            time.sleep(30)
+                            self.buyToken(token=self.data[row[self.idDesc]][self.bscContractDesc])
+                            time.sleep(30)
+                            self.buyToken(token=self.data[row[self.idDesc]][self.bscContractDesc])
+                            time.sleep(30)
+                            self.buyToken(token=self.data[row[self.idDesc]][self.bscContractDesc])
+                            time.sleep(30)
+                            self.buyToken(token=self.data[row[self.idDesc]][self.bscContractDesc])
+                            time.sleep(30)
+                            self.buyToken(token=self.data[row[self.idDesc]][self.bscContractDesc])
+                            time.sleep(30)
+                            self.buyToken(token=self.data[row[self.idDesc]][self.bscContractDesc])
+                            time.sleep(30)
+                            self.buyToken(token=self.data[row[self.idDesc]][self.bscContractDesc])
+                            time.sleep(30)
+                            self.buyToken(token=self.data[row[self.idDesc]][self.bscContractDesc])
+                            time.sleep(30)
+                            self.buyToken(token=self.data[row[self.idDesc]][self.bscContractDesc])
+                            
+                            exit()
                         else:
                             self.sellToken(token=self.data[row[self.idDesc]][self.bscContractDesc])
 
@@ -393,7 +452,7 @@ class cmc:
 
         csvSymbolsNotSold = []
 
-        with open(self.moveHistoryCsv) as f:
+        with open(self.tradingHistoryCsv) as f:
 
             lis = [line.split(sep=self.separator) for line in f]  # create a list of lists
 
@@ -408,6 +467,19 @@ class cmc:
         csvSymbolsNotSold = list(dict.fromkeys(csvSymbolsNotSold))
 
         return csvSymbolsNotSold
+
+
+    def test_getCsvSymbolsNotSold(self):
+
+        df = pd.read_csv(self.tradingHistoryCsv, sep=self.separator)
+
+        df[self.idDesc] = df[self.idDesc].astype(int)
+
+        df = df[(df[self.isTradingDesc] == boolToInt(val=self.isTrading)) & (df[self.isSoldDesc] == 0)]
+
+        print(df)
+
+        return df
 
 
     def getCsvBscTokens(self):
@@ -513,7 +585,7 @@ class cmc:
         return df
 
 
-    def sendEmails(self, tradeAction, urlAction, cryptoData, percentageDiff, color, tokens):
+    def sendEmails(self, tradeAction, urlAction, cryptoData, percentageDiff, color, token):
 
         while True:
             try:
@@ -538,9 +610,9 @@ class cmc:
         # Start preparing the content of the email
         content = f"""
         <h2 style="color: {color};">Ha variado {percentageDiff} %</h2>
-        <h3>Precio en dolares:</h3>
-        <h3>Ahora = {cryptoData[self.priceDesc]}</h3>
-        <h3>Antes = {cryptoData[self.prevPriceDesc]}</h3>
+        <h3>Precio:</h3>
+        <h3>Ahora = {cryptoData[self.priceDesc]} BNB</h3>
+        <h3>Antes = {cryptoData[self.prevPriceDesc]} BNB</h3>
         """
 
         emailContent = content + f"""<h3><a href="{coinMarketCapUrl}">{coinMarketCapDesc}</a></h3>
@@ -550,6 +622,7 @@ class cmc:
         {coinMarketCapUrl}
         """
 
+        """
         for platform, token in tokens.items():
 
             if platform == self.binanceSmartChainDesc:
@@ -558,20 +631,21 @@ class cmc:
                 baseUrl = self.uniswapBaseUrl
             else:
                 continue
+        """
 
-            # Set URL to buy or sell coins
-            tradeUrl = baseUrl + urlAction + "=" + token
+        # Set URL to buy or sell coins
+        tradeUrl = self.pancakeSwapBaseUrl + urlAction + "=" + token
 
-            desc = f"{tradeAction} en {platform} con token {token}"
+        desc = f"{tradeAction} en Bscscan con token {token}"
 
-            # Add trading links to buy or sell
-            emailContent += f"""<h3><a href="{tradeUrl}">{desc}</a></h3>
-            """
+        # Add trading links to buy or sell
+        emailContent += f"""<h3><a href="{tradeUrl}">{desc}</a></h3>
+        """
 
-            whatsappContent += f"""
-            {desc}
-            {tradeUrl}
-            """
+        whatsappContent += f"""
+        {desc}
+        {tradeUrl}
+        """
             
         emailContent = MIMEText(emailContent, "html")
         whatsappContent = re.sub('<[^<]+?>', '', whatsappContent)

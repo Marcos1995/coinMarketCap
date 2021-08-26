@@ -1,16 +1,15 @@
 import triggerClass as tC
-import pandas as pd
 
 # -------------------------------------------------------------------------------------------
 
 e = tC.cmc(
-    buyTrigger=-90,  # %
+    buyTrigger=-10,  # %
     sellTrigger=100,  # %
-    sendNotifications=False,
-    isSimulation=False,
-    moveHistoryCsv="moveHistory.csv",
-    bscContractsCsv = "bscContracts.csv",
+    isTrading=False,
+    sendNotifications=True,
+    tradingHistoryCsv="tradingHistory.csv",
+    bscContractsCsv="bscContracts.csv",
     delay=30
 )
 
-e.core()
+e.test_getCsvSymbolsNotSold()

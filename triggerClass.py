@@ -229,7 +229,7 @@ class cmc:
             return 0
             #printInfo(f"Error calculando el precio en getPancakeSwapPrice()")
 
-        return bnbPriceInUSDT * tokenPriceInBNB
+        return float(bnbPriceInUSDT * tokenPriceInBNB)
 
 
     def getTokenDecimals(self, token):
@@ -290,7 +290,7 @@ class cmc:
 
             # Get .csv symbols not sold
             if os.path.exists(self.tradingHistoryCsv):
-                dfCsvSymbolsNotSold = self.test_getCsvSymbolsNotSold()
+                dfCsvSymbolsNotSold = self.getCsvSymbolsNotSold()
                 writeTradingHistoryHeaders = False
             else:
                 dfCsvSymbolsNotSold = pd.DataFrame()
@@ -317,8 +317,6 @@ class cmc:
                 else:
 
                     prevPrice = self.data[row[self.idDesc]][self.priceDesc]
-
-                    print(self.csvSymbolsNotSold)
 
                     if row[self.idDesc] in self.csvSymbolsNotSold:
 
@@ -457,7 +455,7 @@ class cmc:
             #time.sleep(self.delay)
 
 
-    def getCsvSymbolsNotSold(self):
+    def old_getCsvSymbolsNotSold(self):
 
         csvSymbolsNotSold = []
 
@@ -478,19 +476,17 @@ class cmc:
         return csvSymbolsNotSold
 
 
-    def test_getCsvSymbolsNotSold(self):
+    def getCsvSymbolsNotSold(self):
 
         df = pd.read_csv(self.tradingHistoryCsv, sep=self.separator)
 
         df[self.idDesc] = df[self.idDesc].astype(int)
 
-        print(df)
-
         df = df[(df[self.isTradingDesc] == boolToInt(val=self.isTrading)) & (df[self.isSoldDesc] == 0)]
 
         self.csvSymbolsNotSold = df[self.idDesc].tolist()
 
-        print(df)
+        #print(self.csvSymbolsNotSold)
 
         return df
 

@@ -17,6 +17,7 @@ from twilio.rest import Client
 import re
 from web3 import Web3
 import time
+from concurrent.futures import ThreadPoolExecutor
 
 # ------------------------------------------------------------------------------------
 
@@ -83,6 +84,10 @@ class cmc:
         self.tradingHistoryCsv = tradingHistoryCsv
         self.bscContractsCsv = bscContractsCsv
         self.delay = delay
+
+        self.counter = 0
+
+        self.bscContractsDf = pd.DataFrame()
 
         self.csvBscContractTokens = []
         self.csvSymbolsNotSold = []
@@ -260,199 +265,204 @@ class cmc:
         return int(numberAbs + numberDecimals)
 
 
-    def core(self):
+    def getNewBscContracts(self):
 
-        counter = 0
+        # Get API data
+        dataDf = self.getData()
 
-        bscContractsDf = pd.DataFrame()
+        # Get .csv symbols with pairAddresses
+        if os.path.exists(self.bscContractsCsv):
+            self.getCsvBscTokens()
+            bscContractsHeader = False
+        else:
+            bscContractsHeader = True
 
-        while True:
+        # For each dataframe row
+        for i, row in dataDf.iterrows():
+            if row[self.idDesc] not in self.csvBscContractTokens:
+                self.insertBscContracts(row=row, headers=bscContractsHeader)
 
-            if counter % 10 == 0:
 
-                # Get API data
-                df = self.getData()
+    def core(self, currentLoop):
 
-                # Get .csv symbols with pairAddresses
-                if os.path.exists(self.bscContractsCsv):
-                    bscContractsDf = self.getCsvBscTokens()
-                    bscContractsHeader = False
-                else:
-                    bscContractsHeader = True
+        startDate = dt.datetime.now()
 
-                # For each dataframe row
-                for i, row in df.iterrows():
-                    self.checkBscContracts(row=row, headers=bscContractsHeader)
+        printInfo(f"Start loop {currentLoop} // {startDate}", bcolors.OK)
 
-                printInfo(f"--- For Loop: {counter}", bcolors.WARN)
+        if self.counter % 10 == 0:
+            printInfo(f"--- For Loop: {self.counter}", bcolors.WARN)
 
-            delayDone = False
+        delayDone = False
 
-            # Get .csv symbols not sold
-            if os.path.exists(self.tradingHistoryCsv):
-                dfCsvSymbolsNotSold = self.getCsvSymbolsNotSold()
-                writeTradingHistoryHeaders = False
+        # Get .csv symbols not sold
+        if os.path.exists(self.tradingHistoryCsv):
+            dfCsvSymbolsNotSold = self.getCsvSymbolsNotSold()
+            writeTradingHistoryHeaders = False
+        else:
+            dfCsvSymbolsNotSold = pd.DataFrame()
+            writeTradingHistoryHeaders = True
+
+        # For each dataframe row
+        for i, row in self.bscContractsDf.iterrows():
+
+            # If "current" values are not set
+            if self.data.get(row[self.idDesc], {self.priceDesc: -1})[self.priceDesc] == -1:
+
+                self.data.setdefault(row[self.idDesc], {})[self.symbolNameDesc] = row[self.symbolNameDesc]
+                self.data[row[self.idDesc]][self.symbolDesc] = row[self.symbolDesc]
+                self.data[row[self.idDesc]][self.slugDesc] = row[self.slugDesc]
+                self.data[row[self.idDesc]][self.bscContractDesc] = row[self.bscContractDesc]
+
+                self.data[row[self.idDesc]][self.priceDesc] = self.getPancakeSwapPrice(token=row[self.bscContractDesc])
+
+                #printInfo(f"{self.data[row[self.idDesc]][self.symbolNameDesc]} = {self.data[row[self.idDesc]][self.priceDesc]} BNB", bcolors.OK)
+                #continue
+
+
+            # If "previous" values are set
             else:
-                dfCsvSymbolsNotSold = pd.DataFrame()
-                writeTradingHistoryHeaders = True
 
-            # For each dataframe row
-            for i, row in bscContractsDf.iterrows():
+                prevPrice = self.data[row[self.idDesc]][self.priceDesc]
 
-                # If "current" values are not set
-                if self.data.get(row[self.idDesc], {self.priceDesc: -1})[self.priceDesc] == -1:
+                if row[self.idDesc] in self.csvSymbolsNotSold:
 
-                    self.data.setdefault(row[self.idDesc], {})[self.symbolNameDesc] = row[self.symbolNameDesc]
-                    self.data[row[self.idDesc]][self.symbolDesc] = row[self.symbolDesc]
-                    self.data[row[self.idDesc]][self.slugDesc] = row[self.slugDesc]
-                    self.data[row[self.idDesc]][self.bscContractDesc] = row[self.bscContractDesc]
+                        prevPrice = float(dfCsvSymbolsNotSold[dfCsvSymbolsNotSold[self.idDesc] == row[self.idDesc]][self.priceDesc])
+                        #printInfo(f"El symbol {self.data[row[self.idDesc]][self.symbolNameDesc]} ya tiene prevPrice que es {prevPrice} BNB", bcolors.OK)
 
-                    self.data[row[self.idDesc]][self.priceDesc] = self.getPancakeSwapPrice(token=row[self.bscContractDesc])
+                self.data[row[self.idDesc]][self.prevPriceDesc] = prevPrice
+                self.data[row[self.idDesc]][self.priceDesc] = self.getPancakeSwapPrice(token=row[self.bscContractDesc])
 
-                    #printInfo(f"{self.data[row[self.idDesc]][self.symbolNameDesc]} = {self.data[row[self.idDesc]][self.priceDesc]} BNB", bcolors.OK)
-                    #continue
+                if self.data[row[self.idDesc]][self.priceDesc] == 0 or self.data[row[self.idDesc]][self.prevPriceDesc] == 0:
+                    continue
 
+                # Calculate diff percentage
+                percengeDiffWoFormat = self.data[row[self.idDesc]][self.priceDesc] / self.data[row[self.idDesc]][self.prevPriceDesc]
+                percentageDiff = formatPercentages(percengeDiffWoFormat)
 
-                # If "previous" values are set
-                else:
-
-                    prevPrice = self.data[row[self.idDesc]][self.priceDesc]
-
-                    if row[self.idDesc] in self.csvSymbolsNotSold:
-
-                            prevPrice = float(dfCsvSymbolsNotSold[dfCsvSymbolsNotSold[self.idDesc] == row[self.idDesc]][self.priceDesc])
-                            printInfo(f"El symbol {self.data[row[self.idDesc]][self.symbolNameDesc]} ya tiene prevPrice que es {prevPrice} BNB", bcolors.OK)
-
-                    self.data[row[self.idDesc]][self.prevPriceDesc] = prevPrice
-                    self.data[row[self.idDesc]][self.priceDesc] = self.getPancakeSwapPrice(token=row[self.bscContractDesc])
-
-                    if self.data[row[self.idDesc]][self.priceDesc] == 0 or self.data[row[self.idDesc]][self.prevPriceDesc] == 0:
-                        continue
-
-                    # Calculate diff percentage
-                    percengeDiffWoFormat = self.data[row[self.idDesc]][self.priceDesc] / self.data[row[self.idDesc]][self.prevPriceDesc]
-                    percentageDiff = formatPercentages(percengeDiffWoFormat)
-
-                    # If we should buy or sell a crypto
-                    if percentageDiff <= self.buyTrigger and row[self.idDesc] not in self.csvSymbolsNotSold: # buy
-                        
-                        color = bcolors.ERR
-                        HTMLcolor = "red"
-                        tradeAction = "Comprar"
-                        urlAction = "outputCurrency"
-                        isToBuy = True
-
-                        # -------------------------------------------------------------------
-
-                        # Prepare data to insert in .csv file
-                        tempRow = {}
-
-                        for x, y in row.items():
-                            tempRow[x] = y
-
-                        tempRow[self.isSoldDesc] = 0
-                        tempRow[self.isTradingDesc] = boolToInt(val=self.isTrading)
-                        tempRow[self.priceDesc] = self.data[row[self.idDesc]][self.priceDesc]
-                        tempRow[self.sellPriceDesc] = None
-                        tempRow[self.percentageDiffDesc] = percentageDiff
-                        tempRow[self.sellPercentageDiffDesc] = None
-                        tempRow[self.datetimeDesc] = dt.datetime.now()
-                        tempRow[self.sellDatetimeDesc] = None
-
-                        # To dataFrame
-                        tempDf = pd.DataFrame([tempRow])
-
-                        tempDf.to_csv(self.tradingHistoryCsv, index=False, columns=list(tempDf), mode="a", header=writeTradingHistoryHeaders)
-                        writeTradingHistoryHeaders = False
-
-                    elif percentageDiff >= self.sellTrigger and row[self.idDesc] in self.csvSymbolsNotSold: # sell
-
-                        color = bcolors.OK
-                        HTMLcolor = "green"
-                        tradeAction = "Vender"
-                        urlAction = "inputCurrency"
-                        isToBuy = False
-
-                        # ------------------------------------------------------------------
-
-                        # Update .csv setting the new cells value
-                        tempfile = NamedTemporaryFile(mode='w', delete=False)
-
-                        df = pd.read_csv(self.tradingHistoryCsv, sep=self.separator)
-
-                        with open(self.tradingHistoryCsv, 'r', newline='') as csvfile, tempfile:
-                            reader = csv.DictReader(csvfile, fieldnames=list(df), delimiter=self.separator)
-                            writer = csv.DictWriter(tempfile, fieldnames=list(df), delimiter=self.separator, lineterminator='\n')
-                            for r in reader:
-
-                                if r[self.symbolDesc] == self.symbolDesc:
-                                    writer.writerow(r)
-                                    continue
-
-                                if int(r[self.idDesc]) == int(row[self.idDesc]) and int(r[self.isTradingDesc]) == boolToInt(val=self.isTrading) and int(r[self.isSoldDesc]) == 0:
-                                    r[self.isSoldDesc] = 1
-                                    r[self.sellPriceDesc] = self.data[row[self.idDesc]][self.priceDesc]
-                                    r[self.sellPercentageDiffDesc] = percentageDiff
-                                    r[self.sellDatetimeDesc] = dt.datetime.now()
-
-                                writer.writerow(r)
-
-                        shutil.move(tempfile.name, self.tradingHistoryCsv)
-
-                    else: # Nothing to do, so let's continue with the other coin
-                        continue
-
-                    #tokens = self.getTokens(cryptoSlug=self.data[row[self.idDesc]][self.slugDesc])
-
-                    printInfo(f"{percentageDiff} % --- {tradeAction} {self.data[row[self.idDesc]][self.symbolNameDesc]} ({self.data[row[self.idDesc]][self.symbolDesc]}"
-                    + f" - {row[self.idDesc]}) // Ahora = {self.data[row[self.idDesc]][self.priceDesc]} BNB, Antes = {self.data[row[self.idDesc]][self.prevPriceDesc]} BNB", color)
+                # If we should buy or sell a crypto
+                if percentageDiff <= self.buyTrigger and row[self.idDesc] not in self.csvSymbolsNotSold: # buy
                     
-                    printInfo(f"{self.pancakeSwapBaseUrl}inputCurrency={self.data[row[self.idDesc]][self.bscContractDesc]}", color)
+                    color = bcolors.ERR
+                    HTMLcolor = "red"
+                    tradeAction = "Comprar"
+                    urlAction = "outputCurrency"
+                    isToBuy = True
 
-                    #if len(tokens) > 0:
+                    # -------------------------------------------------------------------
 
-                    if self.isTrading: # and self.binanceSmartChainDesc in tokens.keys():
+                    # Prepare data to insert in .csv file
+                    tempRow = {}
 
-                        if self.sendNotifications:
-                            self.sendEmails(
-                                tradeAction=tradeAction, urlAction=urlAction, cryptoData=self.data[row[self.idDesc]],
-                                percentageDiff=percentageDiff, color=HTMLcolor, token=self.data[row[self.idDesc]][self.bscContractDesc]
-                            )
+                    for x, y in row.items():
+                        tempRow[x] = y
 
-                        if not delayDone:
-                            delayDone = True
-                            #time.sleep(self.delay * 3) # 4
+                    tempRow[self.isSoldDesc] = 0
+                    tempRow[self.isTradingDesc] = boolToInt(val=self.isTrading)
+                    tempRow[self.priceDesc] = self.data[row[self.idDesc]][self.priceDesc]
+                    tempRow[self.sellPriceDesc] = None
+                    tempRow[self.percentageDiffDesc] = percentageDiff
+                    tempRow[self.sellPercentageDiffDesc] = None
+                    tempRow[self.datetimeDesc] = dt.datetime.now()
+                    tempRow[self.sellDatetimeDesc] = None
 
-                        if isToBuy:
-                            self.buyToken(token=self.data[row[self.idDesc]][self.bscContractDesc])
-                            time.sleep(30)
-                            self.buyToken(token=self.data[row[self.idDesc]][self.bscContractDesc])
-                            time.sleep(30)
-                            self.buyToken(token=self.data[row[self.idDesc]][self.bscContractDesc])
-                            time.sleep(30)
-                            self.buyToken(token=self.data[row[self.idDesc]][self.bscContractDesc])
-                            time.sleep(30)
-                            self.buyToken(token=self.data[row[self.idDesc]][self.bscContractDesc])
-                            time.sleep(30)
-                            self.buyToken(token=self.data[row[self.idDesc]][self.bscContractDesc])
-                            time.sleep(30)
-                            self.buyToken(token=self.data[row[self.idDesc]][self.bscContractDesc])
-                            time.sleep(30)
-                            self.buyToken(token=self.data[row[self.idDesc]][self.bscContractDesc])
-                            time.sleep(30)
-                            self.buyToken(token=self.data[row[self.idDesc]][self.bscContractDesc])
-                            time.sleep(30)
-                            self.buyToken(token=self.data[row[self.idDesc]][self.bscContractDesc])
-                            time.sleep(30)
-                            self.buyToken(token=self.data[row[self.idDesc]][self.bscContractDesc])
-                            
-                            exit()
-                        else:
-                            self.sellToken(token=self.data[row[self.idDesc]][self.bscContractDesc])
+                    # To dataFrame
+                    tempDf = pd.DataFrame([tempRow])
 
-            counter += 1
+                    tempDf.to_csv(self.tradingHistoryCsv, index=False, columns=list(tempDf), mode="a", header=writeTradingHistoryHeaders)
+                    writeTradingHistoryHeaders = False
 
-            #time.sleep(self.delay)
+                elif percentageDiff >= self.sellTrigger and row[self.idDesc] in self.csvSymbolsNotSold: # sell
+
+                    color = bcolors.OK
+                    HTMLcolor = "green"
+                    tradeAction = "Vender"
+                    urlAction = "inputCurrency"
+                    isToBuy = False
+
+                    # ------------------------------------------------------------------
+
+                    # Update .csv setting the new cells value
+                    tempfile = NamedTemporaryFile(mode='w', delete=False)
+
+                    df = pd.read_csv(self.tradingHistoryCsv, sep=self.separator)
+
+                    with open(self.tradingHistoryCsv, 'r', newline='') as csvfile, tempfile:
+                        reader = csv.DictReader(csvfile, fieldnames=list(df), delimiter=self.separator)
+                        writer = csv.DictWriter(tempfile, fieldnames=list(df), delimiter=self.separator, lineterminator='\n')
+                        for r in reader:
+
+                            if r[self.symbolDesc] == self.symbolDesc:
+                                writer.writerow(r)
+                                continue
+
+                            if int(r[self.idDesc]) == int(row[self.idDesc]) and int(r[self.isTradingDesc]) == boolToInt(val=self.isTrading) and int(r[self.isSoldDesc]) == 0:
+                                r[self.isSoldDesc] = 1
+                                r[self.sellPriceDesc] = self.data[row[self.idDesc]][self.priceDesc]
+                                r[self.sellPercentageDiffDesc] = percentageDiff
+                                r[self.sellDatetimeDesc] = dt.datetime.now()
+
+                            writer.writerow(r)
+
+                    shutil.move(tempfile.name, self.tradingHistoryCsv)
+
+                else: # Nothing to do, so let's continue with the other coin
+                    continue
+
+                #tokens = self.getTokens(cryptoSlug=self.data[row[self.idDesc]][self.slugDesc])
+
+                printInfo(f"CurrentLoop = {currentLoop} || {percentageDiff} % --- {tradeAction} {self.data[row[self.idDesc]][self.symbolNameDesc]} ({self.data[row[self.idDesc]][self.symbolDesc]}"
+                + f" - {row[self.idDesc]}) // Ahora = {self.data[row[self.idDesc]][self.priceDesc]} BNB, Antes = {self.data[row[self.idDesc]][self.prevPriceDesc]} BNB", color)
+                
+                printInfo(f"{self.pancakeSwapBaseUrl}inputCurrency={self.data[row[self.idDesc]][self.bscContractDesc]}", color)
+
+                #if len(tokens) > 0:
+
+                if self.isTrading: # and self.binanceSmartChainDesc in tokens.keys():
+
+                    if self.sendNotifications:
+                        self.sendEmails(
+                            tradeAction=tradeAction, urlAction=urlAction, cryptoData=self.data[row[self.idDesc]],
+                            percentageDiff=percentageDiff, color=HTMLcolor, token=self.data[row[self.idDesc]][self.bscContractDesc]
+                        )
+
+                    if not delayDone:
+                        delayDone = True
+                        #time.sleep(self.delay * 3) # 4
+
+                    if isToBuy:
+                        self.buyToken(token=self.data[row[self.idDesc]][self.bscContractDesc])
+                        time.sleep(30)
+                        self.buyToken(token=self.data[row[self.idDesc]][self.bscContractDesc])
+                        time.sleep(30)
+                        self.buyToken(token=self.data[row[self.idDesc]][self.bscContractDesc])
+                        time.sleep(30)
+                        self.buyToken(token=self.data[row[self.idDesc]][self.bscContractDesc])
+                        time.sleep(30)
+                        self.buyToken(token=self.data[row[self.idDesc]][self.bscContractDesc])
+                        time.sleep(30)
+                        self.buyToken(token=self.data[row[self.idDesc]][self.bscContractDesc])
+                        time.sleep(30)
+                        self.buyToken(token=self.data[row[self.idDesc]][self.bscContractDesc])
+                        time.sleep(30)
+                        self.buyToken(token=self.data[row[self.idDesc]][self.bscContractDesc])
+                        time.sleep(30)
+                        self.buyToken(token=self.data[row[self.idDesc]][self.bscContractDesc])
+                        time.sleep(30)
+                        self.buyToken(token=self.data[row[self.idDesc]][self.bscContractDesc])
+                        time.sleep(30)
+                        self.buyToken(token=self.data[row[self.idDesc]][self.bscContractDesc])
+                        
+                        exit()
+                    else:
+                        self.sellToken(token=self.data[row[self.idDesc]][self.bscContractDesc])
+
+        self.counter += 1
+
+        endDate = dt.datetime.now()
+
+        printInfo(f"End loop {self.counter} // Start = {startDate}, End = {endDate} ||| {endDate - startDate}", bcolors.WARN)
+
+        #time.sleep(self.delay)
 
 
     def old_getCsvSymbolsNotSold(self):
@@ -498,39 +508,35 @@ class cmc:
         df[self.idDesc] = df[self.idDesc].astype(int)
 
         self.csvBscContractTokens = df[self.idDesc].tolist()
-
-        # Filter out NaN values
-        return df[df[self.bscContractDesc].notnull()]
+        self.bscContractsDf = df[df[self.bscContractDesc].notnull()]
 
 
     # Insert token data if not in .csv file already
-    def checkBscContracts(self, row, headers):
+    def insertBscContracts(self, row, headers):
 
-        if row[self.idDesc] not in self.csvBscContractTokens:
+        t = self.getTokens(cryptoSlug=row[self.slugDesc])
 
-            t = self.getTokens(cryptoSlug=row[self.slugDesc])
+        if self.binanceSmartChainDesc in t.keys():
+            bscContract = t[self.binanceSmartChainDesc]
+        else:
+            bscContract = None
 
-            if self.binanceSmartChainDesc in t.keys():
-                bscContract = t[self.binanceSmartChainDesc]
-            else:
-                bscContract = None
+        tokenData = {
+            self.idDesc: int(row[self.idDesc]),
+            self.symbolDesc: row[self.symbolDesc],
+            self.symbolNameDesc: row[self.symbolNameDesc],
+            self.slugDesc: row[self.slugDesc],
+            self.bscContractDesc: bscContract,
+        }
 
-            tokenData = {
-                self.idDesc: int(row[self.idDesc]),
-                self.symbolDesc: row[self.symbolDesc],
-                self.symbolNameDesc: row[self.symbolNameDesc],
-                self.slugDesc: row[self.slugDesc],
-                self.bscContractDesc: bscContract,
-            }
+        output = pd.DataFrame()
+        output = output.append(tokenData, ignore_index=True)
 
-            output = pd.DataFrame()
-            output = output.append(tokenData, ignore_index=True)
+        output.to_csv(self.bscContractsCsv, index=False, columns=tokenData.keys(), mode="a", header=headers)
 
-            output.to_csv(self.bscContractsCsv, index=False, columns=tokenData.keys(), mode="a", header=headers)
+        printInfo(f"Contract insertado para {row[self.symbolNameDesc]} ({bscContract})", bcolors.OK)
 
-            printInfo(f"Contract insertado para {row[self.symbolNameDesc]} ({bscContract})", bcolors.OK)
-
-            time.sleep(2)
+        time.sleep(2)
 
 
     def getData(self):
@@ -873,3 +879,17 @@ class cmc:
             except:
                 printInfo("Error en sellToken()", bcolors.ERRMSG)
                 time.sleep(self.delay)
+
+
+    def main(self):
+
+        # Update possible contracts
+        self.getNewBscContracts()
+
+        counterLoops = 0
+
+        with ThreadPoolExecutor(max_workers=10) as executor:
+            while True:
+                future = executor.submit(self.core, counterLoops)
+                time.sleep(self.delay)
+                counterLoops += 1

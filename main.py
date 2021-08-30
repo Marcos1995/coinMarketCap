@@ -4,12 +4,12 @@ import triggerClass as tC
 
 e = tC.cmc(
     buyTrigger=-90,  # %
-    sellTrigger=100,  # %
-    isTrading=True,
+    sellTrigger=10,  # %
+    isTrading=False,
     sendNotifications=False,
     tradingHistoryCsv="tradingHistory.csv",
     bscContractsCsv="bscContracts.csv",
-    delay=30
+    delay=60
 )
 
-e.core()
+e.main()

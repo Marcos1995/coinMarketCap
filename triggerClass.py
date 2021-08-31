@@ -85,8 +85,6 @@ class cmc:
         self.bscContractsCsv = bscContractsCsv
         self.delay = delay
 
-        self.counter = 0
-
         self.bscContractsDf = pd.DataFrame()
 
         self.csvBscContractTokens = []
@@ -289,9 +287,6 @@ class cmc:
 
         printInfo(f"Start loop {currentLoop} // {startDate}", bcolors.OK)
 
-        if self.counter % 10 == 0:
-            printInfo(f"--- For Loop: {self.counter}", bcolors.WARN)
-
         delayDone = False
 
         # Get .csv symbols not sold
@@ -358,6 +353,7 @@ class cmc:
 
                     tempRow[self.isSoldDesc] = 0
                     tempRow[self.isTradingDesc] = boolToInt(val=self.isTrading)
+                    tempRow[self.prevPriceDesc] = self.data[row[self.idDesc]][self.prevPriceDesc]
                     tempRow[self.priceDesc] = self.data[row[self.idDesc]][self.priceDesc]
                     tempRow[self.sellPriceDesc] = None
                     tempRow[self.percentageDiffDesc] = percentageDiff
@@ -387,8 +383,10 @@ class cmc:
                     df = pd.read_csv(self.tradingHistoryCsv, sep=self.separator)
 
                     with open(self.tradingHistoryCsv, 'r', newline='') as csvfile, tempfile:
+
                         reader = csv.DictReader(csvfile, fieldnames=list(df), delimiter=self.separator)
                         writer = csv.DictWriter(tempfile, fieldnames=list(df), delimiter=self.separator, lineterminator='\n')
+
                         for r in reader:
 
                             if r[self.symbolDesc] == self.symbolDesc:
@@ -425,9 +423,9 @@ class cmc:
                             percentageDiff=percentageDiff, color=HTMLcolor, token=self.data[row[self.idDesc]][self.bscContractDesc]
                         )
 
-                    if not delayDone:
-                        delayDone = True
-                        #time.sleep(self.delay * 3) # 4
+                    #if not delayDone:
+                    #delayDone = True
+                    #time.sleep(self.delay * 3) # 4
 
                     if isToBuy:
                         self.buyToken(token=self.data[row[self.idDesc]][self.bscContractDesc])
@@ -455,8 +453,6 @@ class cmc:
                         exit()
                     else:
                         self.sellToken(token=self.data[row[self.idDesc]][self.bscContractDesc])
-
-        self.counter += 1
 
         endDate = dt.datetime.now()
 
@@ -543,30 +539,12 @@ class cmc:
 
         df = pd.DataFrame()
 
-        getUrlData = self.checkCoinMarketCapTimestampUrl
-        dataToGet = False
-
         while len(df) == 0:
 
             try:
 
-                while True:
-
-                    with urllib.request.urlopen(getUrlData) as url:
-                        rawData = json.loads(url.read().decode())
-
-                    if dataToGet:
-                        self.prevTimestamp = self.timestamp
-                        break
-
-                    elif self.timestamp != self.prevTimestamp:
-                        getUrlData = self.allCoinMarketCapCoinsUrl
-                        dataToGet = True
-
-                    else:
-                        time.sleep(5)
-
-                    self.timestamp = rawData[self.statusDesc][self.timestampDesc]
+                with urllib.request.urlopen(self.allCoinMarketCapCoinsUrl) as url:
+                    rawData = json.loads(url.read().decode())
 
                 for i, data in rawData.items():
                     for desc, listOfDicts in data.items():
@@ -587,6 +565,8 @@ class cmc:
 
                             # Expand column in df
                             df = df.drop(self.columnToExpand, axis=1).join(pd.DataFrame(df[self.columnToExpand].values.tolist()))
+
+                            #print(len(df[df[self.priceDesc] <= 1]))
 
             except:
                 printInfo("Error obteniendo datos en getData()", bcolors.ERRMSG)
@@ -886,10 +866,17 @@ class cmc:
         # Update possible contracts
         self.getNewBscContracts()
 
-        counterLoops = 0
+        loopsCounter = 0
 
         with ThreadPoolExecutor(max_workers=10) as executor:
+
             while True:
-                future = executor.submit(self.core, counterLoops)
+                
+                if loopsCounter % 10 == 0:
+                    printInfo(f"--- For Loop: {loopsCounter}", bcolors.WARN)
+
+                loopsCounter += 1
+
+                future = executor.submit(self.core, loopsCounter)
                 time.sleep(self.delay)
-                counterLoops += 1
+

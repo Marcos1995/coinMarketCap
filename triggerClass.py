@@ -86,6 +86,8 @@ class cmc:
         self.delay = delay
 
         self.bscContractsDf = pd.DataFrame()
+        self.dfCsvSymbolsNotSold = pd.DataFrame()
+        self.writeTradingHistoryHeaders = True
 
         self.csvBscContractTokens = []
         self.csvSymbolsNotSold = []
@@ -128,6 +130,9 @@ class cmc:
         self.priceDesc = "price"
         self.prevPriceDesc = "prevPrice"
         self.sellPriceDesc = "sellPrice"
+
+        self.marketCapDesc = "marketCap"
+        self.fullyDilluttedMarketCapDesc = "fullyDilluttedMarketCap"
 
         self.percentChange1hDesc = "percentChange1h"
 
@@ -270,7 +275,7 @@ class cmc:
 
         # Get .csv symbols with pairAddresses
         if os.path.exists(self.bscContractsCsv):
-            self.getCsvBscTokens()
+            self.getCsvBscTokens(dataDf=dataDf)
             bscContractsHeader = False
         else:
             bscContractsHeader = True
@@ -283,19 +288,16 @@ class cmc:
 
     def core(self, currentLoop):
 
+        printInfo(f"Start Loop {currentLoop}", bcolors.OK)
         startDate = dt.datetime.now()
-
-        printInfo(f"Start loop {currentLoop} // {startDate}", bcolors.OK)
-
-        delayDone = False
 
         # Get .csv symbols not sold
         if os.path.exists(self.tradingHistoryCsv):
-            dfCsvSymbolsNotSold = self.getCsvSymbolsNotSold()
-            writeTradingHistoryHeaders = False
+            self.dfCsvSymbolsNotSold = self.getCsvSymbolsNotSold()
+            self.writeTradingHistoryHeaders = False
         else:
-            dfCsvSymbolsNotSold = pd.DataFrame()
-            writeTradingHistoryHeaders = True
+            self.dfCsvSymbolsNotSold = pd.DataFrame()
+            self.writeTradingHistoryHeaders = True
 
         # For each dataframe row
         for i, row in self.bscContractsDf.iterrows():
@@ -320,8 +322,7 @@ class cmc:
                 prevPrice = self.data[row[self.idDesc]][self.priceDesc]
 
                 if row[self.idDesc] in self.csvSymbolsNotSold:
-
-                        prevPrice = float(dfCsvSymbolsNotSold[dfCsvSymbolsNotSold[self.idDesc] == row[self.idDesc]][self.priceDesc])
+                        prevPrice = float(self.dfCsvSymbolsNotSold[self.dfCsvSymbolsNotSold[self.idDesc] == row[self.idDesc]][self.priceDesc])
                         #printInfo(f"El symbol {self.data[row[self.idDesc]][self.symbolNameDesc]} ya tiene prevPrice que es {prevPrice} BNB", bcolors.OK)
 
                 self.data[row[self.idDesc]][self.prevPriceDesc] = prevPrice
@@ -333,6 +334,13 @@ class cmc:
                 # Calculate diff percentage
                 percengeDiffWoFormat = self.data[row[self.idDesc]][self.priceDesc] / self.data[row[self.idDesc]][self.prevPriceDesc]
                 percentageDiff = formatPercentages(percengeDiffWoFormat)
+
+                # Double check to prevent insert info twice
+                if percentageDiff <= self.buyTrigger or percentageDiff >= self.sellTrigger:
+                    self.dfCsvSymbolsNotSold = self.getCsvSymbolsNotSold()
+                    printInfo(f"Current loop = {currentLoop} || Comprobamos doblemente para saber si realmente hemos de hacer trading de {self.data[row[self.idDesc]][self.symbolDesc]} - {percentageDiff}", bcolors.BLUE)
+                else:
+                    continue
 
                 # If we should buy or sell a crypto
                 if percentageDiff <= self.buyTrigger and row[self.idDesc] not in self.csvSymbolsNotSold: # buy
@@ -364,8 +372,8 @@ class cmc:
                     # To dataFrame
                     tempDf = pd.DataFrame([tempRow])
 
-                    tempDf.to_csv(self.tradingHistoryCsv, index=False, columns=list(tempDf), mode="a", header=writeTradingHistoryHeaders)
-                    writeTradingHistoryHeaders = False
+                    tempDf.to_csv(self.tradingHistoryCsv, index=False, columns=list(tempDf), mode="a", header=self.writeTradingHistoryHeaders)
+                    self.writeTradingHistoryHeaders = False
 
                 elif percentageDiff >= self.sellTrigger and row[self.idDesc] in self.csvSymbolsNotSold: # sell
 
@@ -423,10 +431,6 @@ class cmc:
                             percentageDiff=percentageDiff, color=HTMLcolor, token=self.data[row[self.idDesc]][self.bscContractDesc]
                         )
 
-                    #if not delayDone:
-                    #delayDone = True
-                    #time.sleep(self.delay * 3) # 4
-
                     if isToBuy:
                         self.buyToken(token=self.data[row[self.idDesc]][self.bscContractDesc])
                         time.sleep(30)
@@ -455,31 +459,9 @@ class cmc:
                         self.sellToken(token=self.data[row[self.idDesc]][self.bscContractDesc])
 
         endDate = dt.datetime.now()
-
-        printInfo(f"End loop {self.counter} // Start = {startDate}, End = {endDate} ||| {endDate - startDate}", bcolors.WARN)
+        printInfo(f"End loop {currentLoop} // Start = {startDate}, End = {endDate} ||| {endDate - startDate}", bcolors.WARN)
 
         #time.sleep(self.delay)
-
-
-    def old_getCsvSymbolsNotSold(self):
-
-        csvSymbolsNotSold = []
-
-        with open(self.tradingHistoryCsv) as f:
-
-            lis = [line.split(sep=self.separator) for line in f]  # create a list of lists
-
-            for i, row in enumerate(lis):
-                if i == 0:
-                    idColumnIndex = row.index(self.idDesc)
-                    isSoldColumnIndex = row.index(self.isSoldDesc)
-                else:
-                    if int(row[isSoldColumnIndex]) == 0:
-                        csvSymbolsNotSold.append(int(row[idColumnIndex]))
-
-        csvSymbolsNotSold = list(dict.fromkeys(csvSymbolsNotSold))
-
-        return csvSymbolsNotSold
 
 
     def getCsvSymbolsNotSold(self):
@@ -497,14 +479,24 @@ class cmc:
         return df
 
 
-    def getCsvBscTokens(self):
+    def getCsvBscTokens(self, dataDf: pd.DataFrame()):
 
         df = pd.read_csv(self.bscContractsCsv, sep=self.separator)
 
         df[self.idDesc] = df[self.idDesc].astype(int)
 
         self.csvBscContractTokens = df[self.idDesc].tolist()
-        self.bscContractsDf = df[df[self.bscContractDesc].notnull()]
+        df = df[df[self.bscContractDesc].notnull()]
+
+        print(df)
+
+        dataDf = dataDf[(dataDf[self.isActiveDesc] == 1) & (dataDf[self.fullyDilluttedMarketCapDesc] <= 1000000)]
+
+        print(dataDf)
+
+        self.bscContractsDf = df.loc[df[self.idDesc].isin(dataDf[self.idDesc]),:]
+
+        print(self.bscContractsDf)
 
 
     # Insert token data if not in .csv file already
@@ -867,16 +859,15 @@ class cmc:
         self.getNewBscContracts()
 
         loopsCounter = 0
+        eachLoopsInfo = 10
 
-        with ThreadPoolExecutor(max_workers=10) as executor:
+        with ThreadPoolExecutor(max_workers=5) as executor:
 
             while True:
-                
-                if loopsCounter % 10 == 0:
+
+                if loopsCounter % eachLoopsInfo == 0:
                     printInfo(f"--- For Loop: {loopsCounter}", bcolors.WARN)
 
-                loopsCounter += 1
-
                 future = executor.submit(self.core, loopsCounter)
+                loopsCounter += 1
                 time.sleep(self.delay)
-

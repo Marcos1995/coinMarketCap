@@ -9,7 +9,7 @@ e = tC.cmc(
     sendNotifications=False,
     tradingHistoryCsv="tradingHistory.csv",
     bscContractsCsv="bscContracts.csv",
-    delay=45
+    delay=15
 )
 
 e.main()

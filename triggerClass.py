@@ -45,7 +45,7 @@ def getPrivateKey():
 
 class cmc:
 
-    def __init__(self, buyTrigger, sellTrigger, isTrading: bool, sendNotifications: bool, tradingHistoryCsv, bscContractsCsv, delay):
+    def __init__(self, buyTrigger, sellTrigger, isTrading: bool, sendNotifications: bool, tradingHistoryCsv, bscContractsCsv, maxThreads, delay):
 
         # Check parameters
         if not isinstance(buyTrigger, (int, float)):
@@ -72,6 +72,10 @@ class cmc:
             printInfo(f"El parametro bscContractsCsv ha de ser de tipo str acabado en .csv", bcolors.ERRMSG)
             exit()
 
+        elif not isinstance(maxThreads, int):
+            printInfo(f"El parametro maxThreads ha de ser de tipo int", bcolors.ERRMSG)
+            exit()
+        
         elif not isinstance(delay, (int, float)):
             printInfo(f"El parametro delay ha de ser de tipo int o float", bcolors.ERRMSG)
             exit()
@@ -79,10 +83,11 @@ class cmc:
         # Assign parameters to self values
         self.buyTrigger = buyTrigger
         self.sellTrigger = sellTrigger
-        self.sendNotifications = sendNotifications
         self.isTrading = isTrading
+        self.sendNotifications = sendNotifications
         self.tradingHistoryCsv = tradingHistoryCsv
         self.bscContractsCsv = bscContractsCsv
+        self.maxThreads = maxThreads
         self.delay = delay
 
         self.bscContractsDf = pd.DataFrame()
@@ -144,8 +149,6 @@ class cmc:
         self.isSoldDesc = "isSold"
         self.isTradingDesc = "isTrading"
 
-        printInfo(f"{self.isTradingDesc} = {self.isTrading}", bcolors.WARN)
-
         self.separator = ","
 
         self.bscscanDesc = "bscscan"
@@ -206,7 +209,6 @@ class cmc:
         self.tokenDecimalsDesc = "tokenDecimals"
 
         self.bnbAmountToBuy = 0.001
-        printInfo(f"BNB amount to buy for each crypto = {self.bnbAmountToBuy} BNB", bcolors.WARN)
         self.wbnbContract = self.web3.toChecksumAddress("0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c")
         self.usdtContract = self.web3.toChecksumAddress("0x55d398326f99059ff775485246999027b3197955")
 
@@ -214,6 +216,11 @@ class cmc:
 
         self.senderAddress = "0xa9eC6E2129267f01a2E772E208F8b0Ed802748D0"
         self.privateKey = getPrivateKey()
+
+        printInfo(f"{self.isTradingDesc} = {self.isTrading}", bcolors.WARN)
+
+        if self.isTrading:
+            printInfo(f"BNB amount to buy for each crypto = {self.bnbAmountToBuy} BNB", bcolors.WARN)
 
 
     def getPancakeSwapPrice(self, token):

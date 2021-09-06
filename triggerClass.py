@@ -208,7 +208,7 @@ class cmc:
         self.tokenAmount = 10 ** 18
         self.tokenDecimalsDesc = "tokenDecimals"
 
-        self.bnbAmountToBuy = 0.001
+        self.bnbAmountToBuy = 0.005
         self.wbnbContract = self.web3.toChecksumAddress("0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c")
         self.usdtContract = self.web3.toChecksumAddress("0x55d398326f99059ff775485246999027b3197955")
 
@@ -221,6 +221,10 @@ class cmc:
 
         if self.isTrading:
             printInfo(f"BNB amount to buy for each crypto = {self.bnbAmountToBuy} BNB", bcolors.WARN)
+
+            balance = self.web3.eth.get_balance(self.senderAddress)
+            humanReadable = self.web3.fromWei(balance,'ether')
+            printInfo(f"Total BNB amount: {humanReadable}", bcolors.WARN)
 
 
     def getPancakeSwapPrice(self, token):
@@ -440,28 +444,6 @@ class cmc:
 
                     if isToBuy:
                         self.buyToken(token=self.data[row[self.idDesc]][self.bscContractDesc])
-                        time.sleep(30)
-                        self.buyToken(token=self.data[row[self.idDesc]][self.bscContractDesc])
-                        time.sleep(30)
-                        self.buyToken(token=self.data[row[self.idDesc]][self.bscContractDesc])
-                        time.sleep(30)
-                        self.buyToken(token=self.data[row[self.idDesc]][self.bscContractDesc])
-                        time.sleep(30)
-                        self.buyToken(token=self.data[row[self.idDesc]][self.bscContractDesc])
-                        time.sleep(30)
-                        self.buyToken(token=self.data[row[self.idDesc]][self.bscContractDesc])
-                        time.sleep(30)
-                        self.buyToken(token=self.data[row[self.idDesc]][self.bscContractDesc])
-                        time.sleep(30)
-                        self.buyToken(token=self.data[row[self.idDesc]][self.bscContractDesc])
-                        time.sleep(30)
-                        self.buyToken(token=self.data[row[self.idDesc]][self.bscContractDesc])
-                        time.sleep(30)
-                        self.buyToken(token=self.data[row[self.idDesc]][self.bscContractDesc])
-                        time.sleep(30)
-                        self.buyToken(token=self.data[row[self.idDesc]][self.bscContractDesc])
-                        
-                        exit()
                     else:
                         self.sellToken(token=self.data[row[self.idDesc]][self.bscContractDesc])
 
@@ -868,7 +850,7 @@ class cmc:
         loopsCounter = 0
         eachLoopsInfo = 10
 
-        with ThreadPoolExecutor(max_workers=5) as executor:
+        with ThreadPoolExecutor(max_workers=self.maxThreads) as executor:
 
             while True:
 

@@ -1,9 +1,9 @@
-import triggerClass
+import tradingClass
 
 # -------------------------------------------------------------------------------------------
 
-trading = triggerClass.cmc(
-    buyTrigger=-101,  # %
+trading = tradingClass.cmc(
+    buyTrigger=-90,  # %
     sellTrigger=1000,  # %
     isTrading=False,
     sendNotifications=True,

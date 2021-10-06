@@ -3,7 +3,7 @@ import tradingClass
 # -------------------------------------------------------------------------------------------
 
 trading = tradingClass.cmc(
-    buyTrigger=-90,  # %
+    buyTrigger=-0.0001,  # %
     sellTrigger=1000,  # %
     isTrading=False,
     sendNotifications=True,

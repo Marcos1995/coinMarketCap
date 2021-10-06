@@ -92,11 +92,17 @@ class cmc:
         self.maxThreads = maxThreads
         self.delay = delay
 
+        # Get .csv symbols with contracts
+        if os.path.exists(self.bscContractsCsv):
+            self.writeBscContractsHeader = False
+        else:
+            self.writeBscContractsHeader = True
+
         self.bscContractsDf = pd.DataFrame()
         self.dfCsvSymbolsNotSold = pd.DataFrame()
         self.writeTradingHistoryHeaders = True
 
-        self.csvBscContractTokens = []
+        self.bscContractsIDsCsv = []
         self.csvSymbolsNotSold = []
 
         self.cryptoCurrencyListDesc = "cryptoCurrencyList"
@@ -145,6 +151,13 @@ class cmc:
 
         self.datetimeDesc = "datetime"
         self.sellDatetimeDesc = "sellDatetime"
+
+        self.buyURLDesc = "buyURL"
+        self.approveSellURLDesc = "approveSellURL"
+        self.sellURLDesc = "sellURL"
+
+        self.realBuyPriceDesc = "realBuyPrice"
+        self.realSellPriceDesc = "realSellPrice"
 
         self.percentageDiffDesc = "percentageDiff"
         self.sellPercentageDiffDesc = "sellPercentageDiff"
@@ -318,18 +331,24 @@ class cmc:
         # Get API data
         dataDf = self.getData()
 
-        # Get .csv symbols with pairAddresses
-        if os.path.exists(self.bscContractsCsv):
-            self.getCsvBscTokens(dataDf=dataDf)
-            bscContractsHeader = False
-        else:
-            bscContractsHeader = True
+        while True:
 
-        # For each dataframe row
-        for i, row in dataDf.iterrows():
-            if row[self.idDesc] not in self.csvBscContractTokens:
-                self.insertBscContracts(row=row, headers=bscContractsHeader)
-                bscContractsHeader = False
+            isDone = True
+
+            # Get .csv symbols with contracts
+            self.getBscContracts(dataDf=dataDf)
+
+            # For each dataframe row
+            for i, row in dataDf.iterrows():
+                if row[self.idDesc] not in self.bscContractsIDsCsv:
+                    # Insert new cryptos in the file
+                    self.insertBscContracts(row=row)
+                    isDone = False
+
+            if isDone:
+                break
+
+        printInfo(f"Existen {len(self.bscContractsIDsCsv)} cryptos en el fichero '{self.bscContractsCsv}'", bcolors.OK)
 
 
     def core(self, currentLoop):
@@ -338,12 +357,7 @@ class cmc:
         startDate = dt.datetime.now()
 
         # Get .csv symbols not sold
-        if os.path.exists(self.tradingHistoryCsv):
-            self.dfCsvSymbolsNotSold = self.getCsvSymbolsNotSold()
-            self.writeTradingHistoryHeaders = False
-        else:
-            self.dfCsvSymbolsNotSold = pd.DataFrame()
-            self.writeTradingHistoryHeaders = True
+        self.getCsvSymbolsNotSold()
 
         # For each dataframe row
         for i, row in self.bscContractsDf.iterrows():
@@ -369,7 +383,7 @@ class cmc:
 
                 if row[self.idDesc] in self.csvSymbolsNotSold:
                         prevPrice = float(self.dfCsvSymbolsNotSold[self.dfCsvSymbolsNotSold[self.idDesc] == row[self.idDesc]][self.priceDesc])
-                        #printInfo(f"El symbol {self.data[row[self.idDesc]][self.symbolNameDesc]} ya tiene prevPrice que es {prevPrice} BNB", bcolors.OK)
+                        printInfo(f"El symbol {self.data[row[self.idDesc]][self.symbolNameDesc]} ya tiene prevPrice que es {prevPrice} BNB", bcolors.OK)
 
                 self.data[row[self.idDesc]][self.prevPriceDesc] = prevPrice
                 self.data[row[self.idDesc]][self.priceDesc] = self.getPancakeSwapPrice(token=row[self.bscContractDesc])
@@ -383,8 +397,8 @@ class cmc:
 
                 # Double check to prevent insert info twice
                 if percentageDiff <= self.buyTrigger or percentageDiff >= self.sellTrigger:
-                    self.dfCsvSymbolsNotSold = self.getCsvSymbolsNotSold()
                     printInfo(f"Current loop = {currentLoop} || Comprobamos doblemente para saber si realmente hemos de hacer trading de {self.data[row[self.idDesc]][self.symbolDesc]} - {percentageDiff}", bcolors.BLUE)
+                    self.getCsvSymbolsNotSold()
                 else:
                     continue
 
@@ -414,6 +428,11 @@ class cmc:
                     tempRow[self.sellPercentageDiffDesc] = None
                     tempRow[self.datetimeDesc] = dt.datetime.now()
                     tempRow[self.sellDatetimeDesc] = None
+                    tempRow[self.realBuyPriceDesc] = None
+                    tempRow[self.realSellPriceDesc] = None
+                    tempRow[self.buyURLDesc] = None
+                    tempRow[self.approveSellURLDesc] = None
+                    tempRow[self.sellURLDesc] = None
 
                     # To dataFrame
                     tempDf = pd.DataFrame([tempRow])
@@ -478,7 +497,7 @@ class cmc:
                         )
 
                     if isToBuy:
-                        self.buyToken(token=self.data[row[self.idDesc]][self.bscContractDesc])
+                        buyURL = self.buyToken(token=self.data[row[self.idDesc]][self.bscContractDesc])
                     else:
                         self.sellToken(token=self.data[row[self.idDesc]][self.bscContractDesc])
 
@@ -490,31 +509,40 @@ class cmc:
 
     def getCsvSymbolsNotSold(self):
 
+        if not os.path.exists(self.tradingHistoryCsv):
+            self.dfCsvSymbolsNotSold = pd.DataFrame()
+            self.writeTradingHistoryHeaders = True
+            return
+        
         df = pd.read_csv(self.tradingHistoryCsv, sep=self.separator)
 
         df[self.idDesc] = df[self.idDesc].astype(int)
 
-        df = df[(df[self.isTradingDesc] == boolToInt(val=self.isTrading)) & (df[self.isSoldDesc] == 0)]
+        self.dfCsvSymbolsNotSold = df[(df[self.isTradingDesc] == boolToInt(val=self.isTrading)) & (df[self.isSoldDesc] == 0)]
+        self.writeTradingHistoryHeaders = False
 
         self.csvSymbolsNotSold = df[self.idDesc].tolist()
 
-        #print(self.csvSymbolsNotSold)
 
-        return df
+    def getBscContracts(self, dataDf: pd.DataFrame()):
 
-
-    def getCsvBscTokens(self, dataDf: pd.DataFrame()):
+        if self.writeBscContractsHeader:
+            printInfo(f'No existe el fichero "{self.bscContractsCsv}"', bcolors.WARN)
+            return
 
         df = pd.read_csv(self.bscContractsCsv, sep=self.separator)
 
         df[self.idDesc] = df[self.idDesc].astype(int)
 
-        self.csvBscContractTokens = df[self.idDesc].tolist()
+        self.bscContractsIDsCsv = df[self.idDesc].tolist()
         df = df[df[self.bscContractDesc].notnull()]
 
         print(df)
 
-        dataDf = dataDf[(dataDf[self.isActiveDesc] == 1) & (dataDf[self.fullyDilluttedMarketCapDesc] <= 1000000)]
+        dataDf = dataDf[
+            (dataDf[self.isActiveDesc] == 1)
+            & (dataDf[self.fullyDilluttedMarketCapDesc] <= 1000000)
+        ]
 
         print(dataDf)
 
@@ -524,7 +552,7 @@ class cmc:
 
 
     # Insert token data if not in .csv file already
-    def insertBscContracts(self, row, headers):
+    def insertBscContracts(self, row):
 
         t = self.getTokens(cryptoSlug=row[self.slugDesc])
 
@@ -544,11 +572,13 @@ class cmc:
         output = pd.DataFrame()
         output = output.append(tokenData, ignore_index=True)
 
-        output.to_csv(self.bscContractsCsv, index=False, columns=tokenData.keys(), mode="a", header=headers)
+        output.to_csv(self.bscContractsCsv, index=False, columns=tokenData.keys(), mode="a", header=self.writeBscContractsHeader)
+        self.writeBscContractsHeader = False
 
         printInfo(f"Contract insertado para {row[self.symbolNameDesc]} ({bscContract})", bcolors.OK)
 
-        time.sleep(2)
+        # Sleep time to prevent blocks
+        time.sleep(3)
 
 
     def getData(self):
@@ -792,6 +822,8 @@ class cmc:
                 printInfo("Error en buyToken()", bcolors.ERRMSG)
                 time.sleep(self.delay)
 
+        return self.bscscanTransactionBaseUrl + self.web3.toHex(tx_token)
+
 
     def sellToken(self, token):
 
@@ -874,6 +906,8 @@ class cmc:
             except:
                 printInfo("Error en sellToken()", bcolors.ERRMSG)
                 time.sleep(self.delay)
+
+        #return sellURL{0} = self.bscscanTransactionBaseUrl + self.web3.toHex(tx_token)
 
 
     def sellEverything(self):

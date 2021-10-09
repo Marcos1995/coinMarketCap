@@ -383,7 +383,7 @@ class cmc:
 
                 if row[self.idDesc] in self.csvSymbolsNotSold:
                         prevPrice = float(self.dfCsvSymbolsNotSold[self.dfCsvSymbolsNotSold[self.idDesc] == row[self.idDesc]][self.priceDesc])
-                        printInfo(f"El symbol {self.data[row[self.idDesc]][self.symbolNameDesc]} ya tiene prevPrice que es {prevPrice} BNB", bcolors.OK)
+                        #printInfo(f"El symbol {self.data[row[self.idDesc]][self.symbolNameDesc]} ya tiene prevPrice que es {prevPrice} BNB", bcolors.OK)
 
                 self.data[row[self.idDesc]][self.prevPriceDesc] = prevPrice
                 self.data[row[self.idDesc]][self.priceDesc] = self.getPancakeSwapPrice(token=row[self.bscContractDesc])
@@ -476,7 +476,7 @@ class cmc:
 
                     shutil.move(tempfile.name, self.tradingHistoryCsv)
 
-                else: # Nothing to do, so let's continue with the other coin
+                else: # Nothing to do, so let's continue with the other coins
                     continue
 
                 #tokens = self.getTokens(cryptoSlug=self.data[row[self.idDesc]][self.slugDesc])
@@ -499,7 +499,7 @@ class cmc:
                     if isToBuy:
                         buyURL = self.buyToken(token=self.data[row[self.idDesc]][self.bscContractDesc])
                     else:
-                        self.sellToken(token=self.data[row[self.idDesc]][self.bscContractDesc])
+                        sellURLs = self.sellToken(token=self.data[row[self.idDesc]][self.bscContractDesc])
 
         endDate = dt.datetime.now()
         #printInfo(f"End loop {currentLoop} // Start = {startDate}, End = {endDate} ||| {endDate - startDate}", bcolors.WARN)
@@ -779,135 +779,133 @@ class cmc:
 
     def buyToken(self, token):
 
-        while True:
+        try:
+            
+            balance = self.web3.eth.get_balance(self.senderAddress)
+            humanReadable = self.web3.fromWei(balance,'ether')
 
-            try:
+            printInfo(f"Total BNB amount: {humanReadable}", bcolors.WARN)
+            
+            #Contract Address of Token we want to buy
+            tokenToBuy = self.web3.toChecksumAddress(token)        # web3.toChecksumAddress("0x6615a63c260be84974166a5eddff223ce292cf3d")
+            spend = self.web3.toChecksumAddress(self.wbnbContract) # wbnb contract
+            
+            #Setup the PancakeSwap contract
+            #contract = self.web3.eth.contract(address=self.pancakeSwapRouterContractAddress, abi=self.pancakeSwapRouterContractAddressAbi)
+
+            nonce = self.web3.eth.get_transaction_count(self.senderAddress)
+
+            pancakeswap2_txn = self.pancakeSwapRouter.functions.swapExactETHForTokensSupportingFeeOnTransferTokens( # swapExactETHForTokens
+            0, # set to 0, or specify minimum amount of tokeny you want to receive - consider decimals!!!
+            [spend,tokenToBuy],
+            self.senderAddress,
+            (int(time.time()) + 50000)
+            ).buildTransaction({
+            'from': self.senderAddress,
+            'value': self.web3.toWei(self.bnbAmountToBuy,'ether'), # This is the Token(BNB) amount you want to Swap from
+            'gas': self.gas,
+            'gasPrice': self.gasPrice,
+            'nonce': nonce,
+            })
                 
-                balance = self.web3.eth.get_balance(self.senderAddress)
-                humanReadable = self.web3.fromWei(balance,'ether')
-
-                printInfo(f"Total BNB amount: {humanReadable}", bcolors.WARN)
-                
-                #Contract Address of Token we want to buy
-                tokenToBuy = self.web3.toChecksumAddress(token)        # web3.toChecksumAddress("0x6615a63c260be84974166a5eddff223ce292cf3d")
-                spend = self.web3.toChecksumAddress(self.wbnbContract) # wbnb contract
-                
-                #Setup the PancakeSwap contract
-                #contract = self.web3.eth.contract(address=self.pancakeSwapRouterContractAddress, abi=self.pancakeSwapRouterContractAddressAbi)
-
-                nonce = self.web3.eth.get_transaction_count(self.senderAddress)
-
-                pancakeswap2_txn = self.pancakeSwapRouter.functions.swapExactETHForTokensSupportingFeeOnTransferTokens( # swapExactETHForTokens
-                0, # set to 0, or specify minimum amount of tokeny you want to receive - consider decimals!!!
-                [spend,tokenToBuy],
-                self.senderAddress,
-                (int(time.time()) + 50000)
-                ).buildTransaction({
-                'from': self.senderAddress,
-                'value': self.web3.toWei(self.bnbAmountToBuy,'ether'), # This is the Token(BNB) amount you want to Swap from
-                'gas': self.gas,
-                'gasPrice': self.gasPrice,
-                'nonce': nonce,
-                })
-                    
-                signed_txn = self.web3.eth.account.sign_transaction(pancakeswap2_txn, private_key=self.privateKey)
-                tx_token = self.web3.eth.send_raw_transaction(signed_txn.rawTransaction)
+            signed_txn = self.web3.eth.account.sign_transaction(pancakeswap2_txn, private_key=self.privateKey)
+            tx_token = self.web3.eth.send_raw_transaction(signed_txn.rawTransaction)
 
 
-                printInfo(f"Compra realizada! Transacción --> {self.bscscanTransactionBaseUrl}{self.web3.toHex(tx_token)}", bcolors.OKMSG)
+            printInfo(f"Compra realizada! Transacción --> {self.bscscanTransactionBaseUrl}{self.web3.toHex(tx_token)}", bcolors.OKMSG)
 
-                break
-
-            except:
-                printInfo("Error en buyToken()", bcolors.ERRMSG)
-                time.sleep(self.delay)
+        except:
+            printInfo("Error en buyToken()", bcolors.ERRMSG)
+            time.sleep(self.delay)
 
         return self.bscscanTransactionBaseUrl + self.web3.toHex(tx_token)
 
 
     def sellToken(self, token):
 
-        while True:
+        sellURLs = []
 
-            try:
+        try:
 
-                sender_address = self.senderAddress #TokenAddress of holder
-                spend = self.web3.toChecksumAddress(self.wbnbContract)  #WBNB Address
+            sender_address = self.senderAddress #TokenAddress of holder
+            spend = self.web3.toChecksumAddress(self.wbnbContract)  #WBNB Address
 
-                #Get BNB Balance
-                balance = self.web3.eth.get_balance(sender_address)
-                humanReadable = self.web3.fromWei(balance,'ether')
+            #Get BNB Balance
+            balance = self.web3.eth.get_balance(sender_address)
+            humanReadable = self.web3.fromWei(balance,'ether')
 
-                printInfo(f"Total BNB amount: {humanReadable}", bcolors.WARN)
+            printInfo(f"Total BNB amount: {humanReadable}", bcolors.WARN)
+            
+            #Contract id is the new token we are swaping to
+            #contract_id = web3.toChecksumAddress("0xc9849e6fdb743d08faee3e34dd2d1bc69ea11a51")
+            contract_id = self.web3.toChecksumAddress(token)
+            
+            #Setup the PancakeSwap contract
+            #contract = self.web3.eth.contract(address=self.pancakeSwapRouterContractAddress, abi=self.pancakeSwapRouterContractAddressAbi)
+
+            #Create token Instance for Token
+            sellTokenContract = self.web3.eth.contract(contract_id, abi=self.sellAbi)
+
+            #Get Token Balance
+            balance = sellTokenContract.functions.balanceOf(sender_address).call()
+            symbol = sellTokenContract.functions.symbol().call()
+            readable = self.web3.fromWei(balance,'ether')
+
+            if int(readable) == 0:
+                printInfo(f"El balance de {symbol} es 0 y no hay nada que vender", bcolors.WARN)
+                return sellURLs
+
+            printInfo(f"Balance: {readable} {symbol}", bcolors.WARN)
+
+            #Enter amount of token to sell
+            tokenValue = self.web3.toWei(readable, 'ether')
+
+            #Approve Token before Selling
+            tokenValue2 = self.web3.fromWei(tokenValue, 'ether')
+            start = time.time()
+            approve = sellTokenContract.functions.approve(self.pancakeSwapRouterContractAddress, balance).buildTransaction({
+                        'from': sender_address,
+                        'gasPrice': self.gasPrice,
+                        'nonce': self.web3.eth.get_transaction_count(sender_address),
+                        })
+
+            signed_txn = self.web3.eth.account.sign_transaction(approve, private_key=self.privateKey)
+            sell_approved_tx_token = self.web3.eth.send_raw_transaction(signed_txn.rawTransaction)
+
+            sellURLs.append(sell_approved_tx_token)
+
+            printInfo(f"Venta aprobada --> {self.bscscanTransactionBaseUrl}{self.web3.toHex(sell_approved_tx_token)}", bcolors.OK)
+
+            # Wait after approve 10 seconds before sending transaction
+            time.sleep(10)
+
+            printInfo(f"Canjeando {tokenValue2} {symbol} por BNB", bcolors.WARN)
+            # Swaping exact Token for ETH 
+
+            pancakeswap2_txn = self.pancakeSwapRouter.functions.swapExactTokensForETHSupportingFeeOnTransferTokens( # swapExactTokensForETH
+                        tokenValue ,0, 
+                        [contract_id, spend],
+                        sender_address,
+                        (int(time.time()) + 50000)
+
+                        ).buildTransaction({
+                        'from': sender_address,
+                        'gasPrice': self.gasPrice,
+                        'nonce': self.web3.eth.get_transaction_count(sender_address),
+                        })
                 
-                #Contract id is the new token we are swaping to
-                #contract_id = web3.toChecksumAddress("0xc9849e6fdb743d08faee3e34dd2d1bc69ea11a51")
-                contract_id = self.web3.toChecksumAddress(token)
-                
-                #Setup the PancakeSwap contract
-                #contract = self.web3.eth.contract(address=self.pancakeSwapRouterContractAddress, abi=self.pancakeSwapRouterContractAddressAbi)
+            signed_txn = self.web3.eth.account.sign_transaction(pancakeswap2_txn, private_key=self.privateKey)
+            sell_tx_token = self.web3.eth.send_raw_transaction(signed_txn.rawTransaction)
 
-                #Create token Instance for Token
-                sellTokenContract = self.web3.eth.contract(contract_id, abi=self.sellAbi)
+            sellURLs.append(sell_tx_token)
 
-                #Get Token Balance
-                balance = sellTokenContract.functions.balanceOf(sender_address).call()
-                symbol = sellTokenContract.functions.symbol().call()
-                readable = self.web3.fromWei(balance,'ether')
+            printInfo(f"Venta realizada para {symbol}! Transacción --> {self.bscscanTransactionBaseUrl}{self.web3.toHex(sell_tx_token)}", bcolors.OKMSG)
 
-                if int(readable) == 0:
-                    printInfo(f"El balance de {symbol} es 0 y no hay nada que vender", bcolors.WARN)
-                    break
+        except:
+            printInfo("Error en sellToken()", bcolors.ERRMSG)
+            time.sleep(self.delay)
 
-                printInfo(f"Balance: {readable} {symbol}", bcolors.WARN)
-
-                #Enter amount of token to sell
-                tokenValue = self.web3.toWei(readable, 'ether')
-
-                #Approve Token before Selling
-                tokenValue2 = self.web3.fromWei(tokenValue, 'ether')
-                start = time.time()
-                approve = sellTokenContract.functions.approve(self.pancakeSwapRouterContractAddress, balance).buildTransaction({
-                            'from': sender_address,
-                            'gasPrice': self.gasPrice,
-                            'nonce': self.web3.eth.get_transaction_count(sender_address),
-                            })
-
-                signed_txn = self.web3.eth.account.sign_transaction(approve, private_key=self.privateKey)
-                tx_token = self.web3.eth.send_raw_transaction(signed_txn.rawTransaction)
-
-                printInfo(f"Venta aprobada --> {self.bscscanTransactionBaseUrl}{self.web3.toHex(tx_token)}", bcolors.OK)
-
-                # Wait after approve 10 seconds before sending transaction
-                time.sleep(10)
-
-                printInfo(f"Canjeando {tokenValue2} {symbol} por BNB", bcolors.WARN)
-                # Swaping exact Token for ETH 
-
-                pancakeswap2_txn = self.pancakeSwapRouter.functions.swapExactTokensForETHSupportingFeeOnTransferTokens( # swapExactTokensForETH
-                            tokenValue ,0, 
-                            [contract_id, spend],
-                            sender_address,
-                            (int(time.time()) + 50000)
-
-                            ).buildTransaction({
-                            'from': sender_address,
-                            'gasPrice': self.gasPrice,
-                            'nonce': self.web3.eth.get_transaction_count(sender_address),
-                            })
-                    
-                signed_txn = self.web3.eth.account.sign_transaction(pancakeswap2_txn, private_key=self.privateKey)
-                tx_token = self.web3.eth.send_raw_transaction(signed_txn.rawTransaction)
-
-                printInfo(f"Venta realizada para {symbol}! Transacción --> {self.bscscanTransactionBaseUrl}{self.web3.toHex(tx_token)}", bcolors.OKMSG)
-
-                break
-
-            except:
-                printInfo("Error en sellToken()", bcolors.ERRMSG)
-                time.sleep(self.delay)
-
-        #return sellURL{0} = self.bscscanTransactionBaseUrl + self.web3.toHex(tx_token)
+        return sellURLs
 
 
     def sellEverything(self):
@@ -921,7 +919,7 @@ class cmc:
 
         # For each dataframe row
         for i, row in self.bscContractsDf.iterrows():
-            self.sellToken(token=row[self.bscContractDesc])
+            sellURLs = self.sellToken(token=row[self.bscContractDesc])
 
         # Update .csv setting the new cells value
         tempfile = NamedTemporaryFile(mode='w', delete=False)

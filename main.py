@@ -3,10 +3,10 @@ import tradingClass
 # -------------------------------------------------------------------------------------------
 
 trading = tradingClass.cmc(
-    buyTrigger=-0.0001,  # %
-    sellTrigger=1000,  # %
-    isTrading=False,
-    sendNotifications=True,
+    buyTrigger=-50,  # %
+    sellTrigger=100,  # %
+    isTrading=True,
+    sendNotifications=False,
     tradingHistoryCsv="tradingHistory.csv",
     bscContractsCsv="bscContracts.csv",
     maxThreads=5,

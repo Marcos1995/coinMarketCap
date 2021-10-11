@@ -44,6 +44,61 @@ def getPrivateKey():
         for line in mytxt:
             return line
 
+def getRealTradingPrice(tx="https://bscscan.com/tx/0x2e75d498f315ff772dfb835e7521f0c67a344d995381229f84b708759a69410c"):
+    
+    from requests_html import HTMLSession
+
+    session = HTMLSession()
+
+    url='https://bscscan.com/tokenholdings'
+    token={'a': '0xFAe2dac0686f0e543704345aEBBe0AEcab4EDA3d'}
+
+    r = session.get(tx)
+    print(r)
+    a = r.html.render(sleep=2)
+    print(a)
+
+    exit()
+
+    resp = requests.get(tx)
+    print(resp)
+    soup = BeautifulSoup(resp.content, 'html.parser')
+    print(soup)
+
+    exit()
+
+    link = "http://www.somesite.com/details.pl?urn=2344"
+
+    f = urllib.request.urlopen(tx, timeout=10)
+    myfile = f.read()
+
+    print(myfile)
+    exit()
+    
+    #while True:
+    printInfo(tx)
+    """
+
+    #try:
+    html_page = urllib.request.urlopen(tx)
+    print(html_page)
+    soup = BeautifulSoup(html_page, "html.parser")
+    print(soup)
+
+    for link in soup.findAll('span'):
+        href = str(link.get('data-original-title'))
+
+        print(href)
+
+    exit()
+    """
+
+    #except:
+        #printInfo("Error obteniendo datos en getTokens()", bcolors.ERRMSG)
+        #time.sleep(self.delay)
+
+    #return tokens
+
 
 class cmc:
 
@@ -411,7 +466,41 @@ class cmc:
                     urlAction = "outputCurrency"
                     isToBuy = True
 
-                    # -------------------------------------------------------------------
+                elif percentageDiff >= self.sellTrigger and row[self.idDesc] in self.csvSymbolsNotSold: # sell
+
+                    color = bcolors.OK
+                    HTMLcolor = "green"
+                    tradeAction = "Vender"
+                    urlAction = "inputCurrency"
+                    isToBuy = False
+
+                else: # Nothing to do, so let's continue with the other coins
+                    continue
+
+                # Set trading transactions URLs
+                buyURL = approveSellURL = sellURL = None
+
+                if self.sendNotifications:
+                    self.sendEmails(
+                        tradeAction=tradeAction, urlAction=urlAction, cryptoData=self.data[row[self.idDesc]],
+                        percentageDiff=percentageDiff, color=HTMLcolor, token=self.data[row[self.idDesc]][self.bscContractDesc]
+                    )
+
+                # Trade and send notifications (Emails and WhatsApp)
+                if self.isTrading: # and self.binanceSmartChainDesc in tokens.keys():
+                    if isToBuy:
+                        buyURL = self.buyToken(token=self.data[row[self.idDesc]][self.bscContractDesc])
+                    else:
+                        sellURLs = self.sellToken(token=self.data[row[self.idDesc]][self.bscContractDesc])
+
+                        if len(sellURLs) == 2:
+                            approveSellURL = sellURLs[0]
+                            sellURL = sellURLs[1]
+                        elif len(sellURLs) == 1:
+                            approveSellURL = sellURLs[0]
+
+                
+                if isToBuy: # buy
 
                     # Prepare data to insert in .csv file
                     tempRow = {}
@@ -430,7 +519,7 @@ class cmc:
                     tempRow[self.sellDatetimeDesc] = None
                     tempRow[self.realBuyPriceDesc] = None
                     tempRow[self.realSellPriceDesc] = None
-                    tempRow[self.buyURLDesc] = None
+                    tempRow[self.buyURLDesc] = buyURL
                     tempRow[self.approveSellURLDesc] = None
                     tempRow[self.sellURLDesc] = None
 
@@ -440,7 +529,7 @@ class cmc:
                     tempDf.to_csv(self.tradingHistoryCsv, index=False, columns=list(tempDf), mode="a", header=self.writeTradingHistoryHeaders)
                     self.writeTradingHistoryHeaders = False
 
-                elif percentageDiff >= self.sellTrigger and row[self.idDesc] in self.csvSymbolsNotSold: # sell
+                else: # sell
 
                     color = bcolors.OK
                     HTMLcolor = "green"
@@ -471,13 +560,12 @@ class cmc:
                                 r[self.sellPriceDesc] = self.data[row[self.idDesc]][self.priceDesc]
                                 r[self.sellPercentageDiffDesc] = percentageDiff
                                 r[self.sellDatetimeDesc] = dt.datetime.now()
+                                r[self.approveSellURLDesc] = approveSellURL
+                                r[self.sellURLDesc] = sellURL
 
                             writer.writerow(r)
 
                     shutil.move(tempfile.name, self.tradingHistoryCsv)
-
-                else: # Nothing to do, so let's continue with the other coins
-                    continue
 
                 #tokens = self.getTokens(cryptoSlug=self.data[row[self.idDesc]][self.slugDesc])
 
@@ -485,21 +573,6 @@ class cmc:
                 + f" - {row[self.idDesc]}) // Ahora = {self.data[row[self.idDesc]][self.priceDesc]} BNB, Antes = {self.data[row[self.idDesc]][self.prevPriceDesc]} BNB", color)
                 
                 printInfo(f"{self.pancakeSwapBaseUrl}inputCurrency={self.data[row[self.idDesc]][self.bscContractDesc]}", color)
-
-                #if len(tokens) > 0:
-
-                if self.isTrading: # and self.binanceSmartChainDesc in tokens.keys():
-
-                    if self.sendNotifications:
-                        self.sendEmails(
-                            tradeAction=tradeAction, urlAction=urlAction, cryptoData=self.data[row[self.idDesc]],
-                            percentageDiff=percentageDiff, color=HTMLcolor, token=self.data[row[self.idDesc]][self.bscContractDesc]
-                        )
-
-                    if isToBuy:
-                        buyURL = self.buyToken(token=self.data[row[self.idDesc]][self.bscContractDesc])
-                    else:
-                        sellURLs = self.sellToken(token=self.data[row[self.idDesc]][self.bscContractDesc])
 
         endDate = dt.datetime.now()
         #printInfo(f"End loop {currentLoop} // Start = {startDate}, End = {endDate} ||| {endDate - startDate}", bcolors.WARN)
@@ -624,19 +697,17 @@ class cmc:
         return dataDf
 
 
+    # Send gmails, in case of ***ERROR***, allow this https://myaccount.google.com/lesssecureapps --> Explained here https://geekflare.com/send-gmail-in-python/
     def sendEmails(self, tradeAction, urlAction, cryptoData, percentageDiff, color, token):
 
-        while True:
-            try:
-                ssl_context = ssl.create_default_context()
-                service = smtplib.SMTP_SSL(self.smtp_server_domain_name, self.port, context=ssl_context)
-                service.login(self.sender_mail, self.password)
+        try:
+            ssl_context = ssl.create_default_context()
+            service = smtplib.SMTP_SSL(self.smtp_server_domain_name, self.port, context=ssl_context)
+            service.login(self.sender_mail, self.password)
 
-                break
-
-            except:
-                printInfo("Error obteniendo datos en sendEmails()", bcolors.ERRMSG)
-                time.sleep(self.delay)
+        except:
+            printInfo("Error en sendEmails()", bcolors.ERRMSG)
+            time.sleep(self.delay)
 
         # Set email subject
         subject = f"{tradeAction} moneda {cryptoData[self.symbolNameDesc]} con alias {cryptoData[self.symbolDesc]}"
@@ -690,19 +761,17 @@ class cmc:
         whatsappContent = re.sub('<[^<]+?>', '', whatsappContent)
         whatsappContent = re.sub('  +', '', whatsappContent)
 
-        # Send whatsapp message
+        # Send whatsapp message, not working anymore
         self.sendWhatsapp(message=whatsappContent)
         
         for email in self.recipientEmails:
 
-            while True:
-                try:
-                    result = service.sendmail(self.sender_mail, email, f"Subject: {subject}\n{emailContent}")
-                    break
+            try:
+                result = service.sendmail(self.sender_mail, email, f"Subject: {subject}\n{emailContent}")
 
-                except:
-                    printInfo("Error enviando email en sendEmails()", bcolors.ERRMSG)
-                    time.sleep(self.delay)
+            except:
+                printInfo("Error enviando email en sendEmails()", bcolors.ERRMSG)
+                time.sleep(self.delay)
 
         service.quit()
     
@@ -872,9 +941,9 @@ class cmc:
             signed_txn = self.web3.eth.account.sign_transaction(approve, private_key=self.privateKey)
             sell_approved_tx_token = self.web3.eth.send_raw_transaction(signed_txn.rawTransaction)
 
-            sellURLs.append(sell_approved_tx_token)
-
             printInfo(f"Venta aprobada --> {self.bscscanTransactionBaseUrl}{self.web3.toHex(sell_approved_tx_token)}", bcolors.OK)
+
+            sellURLs.append(self.bscscanTransactionBaseUrl + self.web3.toHex(sell_approved_tx_token))
 
             # Wait after approve 10 seconds before sending transaction
             time.sleep(10)
@@ -897,9 +966,9 @@ class cmc:
             signed_txn = self.web3.eth.account.sign_transaction(pancakeswap2_txn, private_key=self.privateKey)
             sell_tx_token = self.web3.eth.send_raw_transaction(signed_txn.rawTransaction)
 
-            sellURLs.append(sell_tx_token)
-
             printInfo(f"Venta realizada para {symbol}! Transacción --> {self.bscscanTransactionBaseUrl}{self.web3.toHex(sell_tx_token)}", bcolors.OKMSG)
+
+            sellURLs.append(self.bscscanTransactionBaseUrl + self.web3.toHex(sell_tx_token))
 
         except:
             printInfo("Error en sellToken()", bcolors.ERRMSG)
@@ -921,31 +990,41 @@ class cmc:
         for i, row in self.bscContractsDf.iterrows():
             sellURLs = self.sellToken(token=row[self.bscContractDesc])
 
-        # Update .csv setting the new cells value
-        tempfile = NamedTemporaryFile(mode='w', delete=False)
+            if len(sellURLs) == 0:
+                continue
+            elif len(sellURLs) == 2:
+                approveSellURL = sellURLs[0]
+                sellURL = sellURLs[1]
+            elif len(sellURLs) == 1:
+                approveSellURL = sellURLs[0]
 
-        df = pd.read_csv(self.tradingHistoryCsv, sep=self.separator)
+            # Update .csv setting the new cells value
+            tempfile = NamedTemporaryFile(mode='w', delete=False)
 
-        with open(self.tradingHistoryCsv, 'r', newline='') as csvfile, tempfile:
+            df = pd.read_csv(self.tradingHistoryCsv, sep=self.separator)
 
-            reader = csv.DictReader(csvfile, fieldnames=list(df), delimiter=self.separator)
-            writer = csv.DictWriter(tempfile, fieldnames=list(df), delimiter=self.separator, lineterminator='\n')
+            with open(self.tradingHistoryCsv, 'r', newline='') as csvfile, tempfile:
 
-            for r in reader:
+                reader = csv.DictReader(csvfile, fieldnames=list(df), delimiter=self.separator)
+                writer = csv.DictWriter(tempfile, fieldnames=list(df), delimiter=self.separator, lineterminator='\n')
 
-                if r[self.symbolDesc] == self.symbolDesc:
+                for r in reader:
+
+                    if r[self.symbolDesc] == self.symbolDesc:
+                        writer.writerow(r)
+                        continue
+
+                    if int(r[self.idDesc]) == int(row[self.idDesc]) and int(r[self.isTradingDesc]) == boolToInt(val=self.isTrading) and int(r[self.isSoldDesc]) == 0:
+                        r[self.isSoldDesc] = 1
+                        r[self.sellPriceDesc] = self.data[row[self.idDesc]][self.priceDesc]
+                        r[self.sellPercentageDiffDesc] = 0
+                        r[self.sellDatetimeDesc] = dt.datetime.now()
+                        r[self.approveSellURLDesc] = approveSellURL
+                        r[self.sellURLDesc] = sellURL
+
                     writer.writerow(r)
-                    continue
 
-                if int(r[self.isTradingDesc]) == boolToInt(val=self.isTrading) and int(r[self.isSoldDesc]) == 0:
-                    r[self.isSoldDesc] = 1
-                    r[self.sellPriceDesc] = self.data[row[self.idDesc]][self.priceDesc]
-                    r[self.sellPercentageDiffDesc] = 0
-                    r[self.sellDatetimeDesc] = dt.datetime.now()
-
-                writer.writerow(r)
-
-        shutil.move(tempfile.name, self.tradingHistoryCsv)
+            shutil.move(tempfile.name, self.tradingHistoryCsv)
 
 
     def main(self):

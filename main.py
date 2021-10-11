@@ -1,12 +1,12 @@
 import tradingClass
 
 # -------------------------------------------------------------------------------------------
-
+"""
 trading = tradingClass.cmc(
     buyTrigger=-50,  # %
     sellTrigger=100,  # %
     isTrading=True,
-    sendNotifications=False,
+    sendNotifications=True,
     tradingHistoryCsv="tradingHistory.csv",
     bscContractsCsv="bscContracts.csv",
     maxThreads=5,
@@ -14,3 +14,5 @@ trading = tradingClass.cmc(
 )
 
 trading.main()
+"""
+tradingClass.getRealTradingPrice()

@@ -56,10 +56,18 @@ class telegram:
         # Csv file where we save the upcoming cryptos Telegram group name and contract
         self.upcomingCryptosCsv = upcomingCryptosCsv
 
+        # ------------------------------------------------
+
+        self.telegramGroupNameDesc = "telegramGroupName"
+        self.newTelegramGroupNameDesc = "newTelegramGroupName"
+        self.contractsDesc = "contracts"
+
         # Do we need to write headers in the .csv file?
         if os.path.exists(self.upcomingCryptosCsv):
+            self.upcomingCryptosInCsvDf = pd.read_csv(self.upcomingCryptosCsv)
             self.writeUpcomingCryptosCsvHeaders = False
         else:
+            self.upcomingCryptosInCsvDf = pd.DataFrame()
             self.writeUpcomingCryptosCsvHeaders = True
 
         self.telegramBaseUrl = "https://t.me/"
@@ -74,11 +82,6 @@ class telegram:
         self.api_id2 = 8472425
         self.api_hash2 = "00790f70543b5a7f94547510d5ebbe84"
         self.phone_number2 = "+34635453357"
-
-        # ----------------
-
-        self.upcomingCryptosDesc = "upcomingCryptos"
-        self.contractsDesc = "contracts"
 
         # Let's start the code
         self.core()
@@ -139,7 +142,7 @@ class telegram:
                     # else:
                     posts = client(GetHistoryRequest(
                         peer=channel_entity,
-                        limit=1000,
+                        limit=10000,
                         offset_date=None,
                         offset_id=0,
                         max_id=0,
@@ -187,21 +190,34 @@ class telegram:
             printInfo(f"{g} = {contract}", bcolors.OKMSG)
 
         # Dict to pd.DataFrame() --> list(df.items()) is required for Python 3.x
-        df = pd.DataFrame(list(upcomingCryptoContracts.items()), columns=[self.upcomingCryptosDesc, self.contractsDesc])
+        df = pd.DataFrame(list(upcomingCryptoContracts.items()), columns=[self.newTelegramGroupNameDesc, self.contractsDesc])
 
         # Check
         print(df)
+
+        # Full join between the .csv pd.DataFrame() and the ones obtained here
+        upcomingCryptosToInsert = self.upcomingCryptosInCsvDf.set_index(self.contractsDesc).combine_first(df.set_index(self.contractsDesc)).reset_index()
+
+        upcomingCryptosToInsert.drop_duplicates(inplace=True)
+
+        print(upcomingCryptosToInsert)
+        
+        upcomingCryptosToInsert = upcomingCryptosToInsert[
+            upcomingCryptosToInsert[self.telegramGroupNameDesc].isnull()
+        ]
+
+        print(upcomingCryptosToInsert)
 
         #tempDf.to_csv(self.tradingHistoryCsv, index=False, columns=list(tempDf), mode="a", header=self.writeTradingHistoryHeaders)
         df.to_csv(self.upcomingCryptosCsv, index=False, columns=list(df), mode="a", header=self.writeUpcomingCryptosCsvHeaders)
 
 
-    # Scrap all Telegram groups we found in the message
+    # Scrap all Telegram groups we in the message
     def getAllTelegramGroupsByMessage(self, message):
 
         #printInfo(message)
 
-        message = message.split("𝗢𝗡𝗚𝗢𝗜𝗡𝗚 𝗪𝗛𝗜𝗧𝗘𝗟𝗜𝗦𝗧:")[0]
+        #message = message.split("𝗢𝗡𝗚𝗢𝗜𝗡𝗚 𝗪𝗛𝗜𝗧𝗘𝗟𝗜𝗦𝗧:")[0]
 
         #printInfo(message)
 

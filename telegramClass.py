@@ -51,7 +51,7 @@ def findContractInTelegramMessages(message, pattern):
 
 class telegram:
 
-    def __init__(self, upcomingCryptosCsv):
+    def __init__(self, upcomingCryptosCsv="upcomingCryptos.csv"):
 
         # Csv file where we save the upcoming cryptos Telegram group name and contract
         self.upcomingCryptosCsv = upcomingCryptosCsv
@@ -73,6 +73,8 @@ class telegram:
         self.telegramBaseUrl = "https://t.me/"
         self.telegramBaseGroupName = "fairlaunchnewstoday"
 
+        self.telegramGroupsMessageText = "FAIR LAUNCH NEWS TODAY would provided a new listing upcoming launches on everyday"
+
         # Connect to Telegram. You must get your own api_id and api_hash from https://my.telegram.org, under API Development.
         self.api_id = 8005184  #number
         self.api_hash = "0a1269bec27d33b56e5351aff08fff41" #string
@@ -84,7 +86,7 @@ class telegram:
         self.phone_number2 = "+34635453357"
 
         # Let's start the code
-        self.core()
+        #self.core()
 
     # --------------------------------------------------------------------------------
 
@@ -142,7 +144,7 @@ class telegram:
                     # else:
                     posts = client(GetHistoryRequest(
                         peer=channel_entity,
-                        limit=10000,
+                        limit=100000,
                         offset_date=None,
                         offset_id=0,
                         max_id=0,
@@ -150,6 +152,8 @@ class telegram:
                         add_offset=0,
                         hash=0
                     ))
+
+                    printInfo(f"posts.messages lenght = {len(posts.messages)}", bcolors.WARN)
                     # messages stored in 'posts.messages'
 
                     # We are trying to get all crypto groups
@@ -160,7 +164,9 @@ class telegram:
                         for i, message in enumerate(posts.messages):
                             m = str(message.message)
 
-                            if len(m) > 1000:
+                            # If the message contains a certain text, it's the right one (not 100% reliable...) 
+                            if self.telegramGroupsMessageText in m:
+                                print(m)
                                 upcomingCryptos = self.getAllTelegramGroupsByMessage(message=m)
                                 return upcomingCryptos
                         
@@ -195,21 +201,41 @@ class telegram:
         # Check
         print(df)
 
-        # Full join between the .csv pd.DataFrame() and the ones obtained here
-        upcomingCryptosToInsert = self.upcomingCryptosInCsvDf.set_index(self.contractsDesc).combine_first(df.set_index(self.contractsDesc)).reset_index()
+        # The .csv file exists
+        if not self.writeUpcomingCryptosCsvHeaders:
 
-        upcomingCryptosToInsert.drop_duplicates(inplace=True)
+            # Full join between the .csv pd.DataFrame() and the one obtained from the Telegram group
+            upcomingCryptosToInsert = self.upcomingCryptosInCsvDf.set_index(self.contractsDesc).combine_first(df.set_index(self.contractsDesc)).reset_index()
+
+            print(upcomingCryptosToInsert)
+
+            # Drop duplicates
+            upcomingCryptosToInsert.drop_duplicates(inplace=True)
+
+            print(upcomingCryptosToInsert)
+            
+            # Filter out the already existing contracts in the .csv file to insert only the new ones
+            upcomingCryptosToInsert = upcomingCryptosToInsert[
+                upcomingCryptosToInsert[self.telegramGroupNameDesc].isnull()
+            ]
+
+            print(upcomingCryptosToInsert)
+
+            # Delete the .csv file column that we will rename our column to insert data in the .csv
+            del upcomingCryptosToInsert[self.telegramGroupNameDesc]
+
+            print(upcomingCryptosToInsert)
+
+        else: # The .csv file does not exists
+            upcomingCryptosToInsert = df
+
+        # Rename column
+        upcomingCryptosToInsert.rename(columns={self.newTelegramGroupNameDesc: self.telegramGroupNameDesc}, inplace=True)
 
         print(upcomingCryptosToInsert)
-        
-        upcomingCryptosToInsert = upcomingCryptosToInsert[
-            upcomingCryptosToInsert[self.telegramGroupNameDesc].isnull()
-        ]
 
-        print(upcomingCryptosToInsert)
-
-        #tempDf.to_csv(self.tradingHistoryCsv, index=False, columns=list(tempDf), mode="a", header=self.writeTradingHistoryHeaders)
-        df.to_csv(self.upcomingCryptosCsv, index=False, columns=list(df), mode="a", header=self.writeUpcomingCryptosCsvHeaders)
+        # Insert data
+        upcomingCryptosToInsert.to_csv(self.upcomingCryptosCsv, index=False, columns=[self.telegramGroupNameDesc, self.contractsDesc], mode="a", header=self.writeUpcomingCryptosCsvHeaders)
 
 
     # Scrap all Telegram groups we in the message
@@ -235,6 +261,10 @@ class telegram:
         return telegramGroups
 
 
+    def getUpcomingCryptosCsvDf(self):
+        return self.upcomingCryptosInCsvDf
+
+
     # ----------------------------------------------------------------------------------------
 
     # Main function of this class, we only need to call this one to execute the full code
@@ -242,8 +272,3 @@ class telegram:
     def core(self):
         upcomingCryptos = self.getUpcomingCryptos()
         self.getUpcomingCryptos(groupNamesList=upcomingCryptos)
-
-
-telegram(
-    upcomingCryptosCsv="upcomingCryptos.csv"
-)

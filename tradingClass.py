@@ -1,3 +1,5 @@
+import telegramClass
+
 from numpy import add
 import requests
 import pandas as pd
@@ -302,6 +304,13 @@ class cmc:
             balance = self.web3.eth.get_balance(self.senderAddress)
             humanReadable = self.web3.fromWei(balance,'ether')
             printInfo(f"Total BNB amount: {humanReadable}", bcolors.WARN)
+
+        # -----------------------------------------------------------------------------------
+
+        # Telegram test
+        self.telegramGroupNameDesc = "telegramGroupName"
+        self.newTelegramGroupNameDesc = "newTelegramGroupName"
+        self.contractsDesc = "contracts"
 
 
     def getPancakeSwapPrice(self, token):
@@ -1027,6 +1036,50 @@ class cmc:
             shutil.move(tempfile.name, self.tradingHistoryCsv)
 
 
+    def telegramCoreTest(self, telegramDf):
+
+        # For each dataframe row
+        for i, row in telegramDf.iterrows():
+
+            # If "current" values are not set
+            if self.data.get(row[self.telegramGroupNameDesc], {self.priceDesc: -1})[self.priceDesc] == -1:
+
+                self.data.setdefault(row[self.telegramGroupNameDesc], {})[self.symbolNameDesc] = row[self.telegramGroupNameDesc]
+                self.data[row[self.telegramGroupNameDesc]][self.contractsDesc] = row[self.contractsDesc]
+
+                self.data[row[self.telegramGroupNameDesc]][self.priceDesc] = self.getPancakeSwapPrice(token=row[self.contractsDesc])
+
+                printInfo(f"{self.data[row[self.telegramGroupNameDesc]][self.symbolNameDesc]} = {self.data[row[self.telegramGroupNameDesc]][self.priceDesc]} BNB", bcolors.OK)
+                #continue
+
+
+            # If "previous" values are set
+            else:
+
+                prevPrice = self.data[row[self.telegramGroupNameDesc]][self.priceDesc]
+
+                self.data[row[self.telegramGroupNameDesc]][self.prevPriceDesc] = prevPrice
+                self.data[row[self.telegramGroupNameDesc]][self.priceDesc] = self.getPancakeSwapPrice(token=row[self.contractsDesc])
+
+                if self.data[row[self.telegramGroupNameDesc]][self.priceDesc] == self.data[row[self.telegramGroupNameDesc]][self.prevPriceDesc]:
+                    continue
+
+                if self.data[row[self.telegramGroupNameDesc]][self.priceDesc] != 0 and self.data[row[self.telegramGroupNameDesc]][self.prevPriceDesc] == 0:
+                    printInfo(f"La oportunidad de ORO!!!! {self.data[row[self.telegramGroupNameDesc]][self.symbolNameDesc]} --> {self.data[row[self.telegramGroupNameDesc]][self.prevPriceDesc]} // {self.data[row[self.telegramGroupNameDesc]][self.priceDesc]} BNB", bcolors.OKMSG)
+                    #continue
+
+                if self.data[row[self.telegramGroupNameDesc]][self.prevPriceDesc] == 0:
+                    prevPrice = 1
+                else:
+                    prevPrice = self.data[row[self.telegramGroupNameDesc]][self.prevPriceDesc]
+
+                # Calculate diff percentage
+                percengeDiffWoFormat = self.data[row[self.telegramGroupNameDesc]][self.priceDesc] / prevPrice
+                percentageDiff = formatPercentages(percengeDiffWoFormat)
+
+                printInfo(f"{self.data[row[self.telegramGroupNameDesc]][self.symbolNameDesc]} --> Antes = {prevPrice} // Ahora = {self.data[row[self.telegramGroupNameDesc]][self.priceDesc]} BNB // Diff = {percentageDiff} %", bcolors.OK)
+
+
     def main(self):
 
         # Update possible contracts
@@ -1045,3 +1098,25 @@ class cmc:
                 future = executor.submit(self.core, loopsCounter)
                 loopsCounter += 1
                 time.sleep(self.delay)
+
+
+    def telegramMainTest(self):
+        telegram = telegramClass.telegram()
+
+        loopsCounter = 0
+        eachLoopsInfo = 10
+
+        while True:
+
+            if loopsCounter % 100 == 0:
+                telegram.core()
+                telegramDf = telegram.getUpcomingCryptosCsvDf()
+                print(telegramDf)
+
+            if loopsCounter % eachLoopsInfo == 0:
+                printInfo(f"--- For Loop: {loopsCounter}", bcolors.WARN)
+
+            self.telegramCoreTest(telegramDf)
+
+            loopsCounter += 1
+            time.sleep(self.delay)

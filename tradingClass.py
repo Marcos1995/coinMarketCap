@@ -1,4 +1,5 @@
 import telegramClass
+import tokenAndHoneypot
 
 from numpy import add
 import requests
@@ -104,7 +105,7 @@ def getRealTradingPrice(tx="https://bscscan.com/tx/0x2e75d498f315ff772dfb835e752
 
 class cmc:
 
-    def __init__(self, buyTrigger, sellTrigger, isTrading: bool, sendNotifications: bool, tradingHistoryCsv, bscContractsCsv, maxThreads, delay):
+    def __init__(self, buyTrigger, sellTrigger, isTrading: bool, sendNotifications: bool, tradingType: int, maxThreads: int, delay):
 
         # Check parameters
         if not isinstance(buyTrigger, (int, float)):
@@ -123,12 +124,8 @@ class cmc:
             printInfo(f"El parametro sendNotification ha de ser de tipo bool", bcolors.ERRMSG)
             exit()
 
-        elif not isinstance(tradingHistoryCsv, str) or not tradingHistoryCsv.endswith(".csv"):
-            printInfo(f"El parametro tradingHistoryCsv ha de ser de tipo str acabado en .csv", bcolors.ERRMSG)
-            exit()
-
-        elif not isinstance(bscContractsCsv, str) or not bscContractsCsv.endswith(".csv"):
-            printInfo(f"El parametro bscContractsCsv ha de ser de tipo str acabado en .csv", bcolors.ERRMSG)
+        elif not isinstance(tradingType, int):
+            printInfo(f"El parametro tradingType ha de ser de tipo int", bcolors.ERRMSG)
             exit()
 
         elif not isinstance(maxThreads, int):
@@ -144,8 +141,28 @@ class cmc:
         self.sellTrigger = sellTrigger
         self.isTrading = isTrading
         self.sendNotifications = sendNotifications
+
+        # Type of trading
+        # 0 = CoinMarketCap cryptos
+        # 1 = TelegramGroup cryptos
+        # ELSE = TokenFOMO cryptos (has to be the best one) 
+        if tradingType == 0:
+            tradingHistoryCsv="tradingHistory.csv"
+            bscContractsCsv="bscContracts.csv"
+            self.extraClass = None
+        elif tradingType == 1:
+            tradingHistoryCsv="telegramTradingHistory.csv"
+            bscContractsCsv="telegramBscContracts.csv"
+            self.extraClass = telegramClass.telegram(bscContractCsv=bscContractsCsv)
+        else:
+            tradingHistoryCsv="tokenFOMOtradingHistory.csv"
+            bscContractsCsv="tokenFOMObscContracts.csv"
+            self.extraClass = tokenAndHoneypot.TokenFOMO(bscContractCsv=bscContractsCsv)
+
+        self.tradingType = tradingType
         self.tradingHistoryCsv = tradingHistoryCsv
         self.bscContractsCsv = bscContractsCsv
+
         self.maxThreads = maxThreads
         self.delay = delay
 
@@ -159,7 +176,7 @@ class cmc:
         self.dfCsvSymbolsNotSold = pd.DataFrame()
         self.writeTradingHistoryHeaders = True
 
-        self.bscContractsIDsCsv = []
+        self.bscContractTokensCsv = []
         self.csvSymbolsNotSold = []
 
         self.cryptoCurrencyListDesc = "cryptoCurrencyList"
@@ -308,9 +325,9 @@ class cmc:
         # -----------------------------------------------------------------------------------
 
         # Telegram test
-        self.telegramGroupNameDesc = "telegramGroupName"
-        self.newTelegramGroupNameDesc = "newTelegramGroupName"
-        self.contractsDesc = "contracts"
+        # self.telegramGroupNameDesc = "telegramGroupName"
+        # self.newTelegramGroupNameDesc = "newTelegramGroupName"
+        # self.bscContractDesc = "contracts"
 
 
     def getPancakeSwapPrice(self, token):
@@ -393,7 +410,10 @@ class cmc:
     def getNewBscContracts(self):
 
         # Get API data
-        dataDf = self.getData()
+        if self.tradingType == 0:
+            dataDf = self.getData()
+        else:
+            dataDf = self.extraClass.getBscContractCsvDf()
 
         while True:
 
@@ -402,9 +422,12 @@ class cmc:
             # Get .csv symbols with contracts
             self.getBscContracts(dataDf=dataDf)
 
+            if self.tradingType != 0:
+                break
+
             # For each dataframe row
             for i, row in dataDf.iterrows():
-                if row[self.idDesc] not in self.bscContractsIDsCsv:
+                if row[self.idDesc] not in self.bscContractTokensCsv:
                     # Insert new cryptos in the file
                     self.insertBscContracts(row=row)
                     isDone = False
@@ -412,7 +435,7 @@ class cmc:
             if isDone:
                 break
 
-        printInfo(f"Existen {len(self.bscContractsIDsCsv)} cryptos en el fichero '{self.bscContractsCsv}'", bcolors.OK)
+        printInfo(f"Existen {len(self.bscContractTokensCsv)} cryptos en el fichero '{self.bscContractsCsv}'", bcolors.OK)
 
 
     def core(self, currentLoop):
@@ -445,7 +468,7 @@ class cmc:
 
                 prevPrice = self.data[row[self.idDesc]][self.priceDesc]
 
-                if row[self.idDesc] in self.csvSymbolsNotSold:
+                if row[self.bscContractDesc] in self.csvSymbolsNotSold:
                         prevPrice = float(self.dfCsvSymbolsNotSold[self.dfCsvSymbolsNotSold[self.idDesc] == row[self.idDesc]][self.priceDesc])
                         #printInfo(f"El symbol {self.data[row[self.idDesc]][self.symbolNameDesc]} ya tiene prevPrice que es {prevPrice} BNB", bcolors.OK)
 
@@ -467,7 +490,7 @@ class cmc:
                     continue
 
                 # If we should buy or sell a crypto
-                if percentageDiff <= self.buyTrigger and row[self.idDesc] not in self.csvSymbolsNotSold: # buy
+                if ((self.tradingType == 0 and percentageDiff <= self.buyTrigger) or self.tradingType != 0) and row[self.bscContractDesc] not in self.csvSymbolsNotSold: # buy
                     
                     color = bcolors.ERR
                     HTMLcolor = "red"
@@ -475,7 +498,7 @@ class cmc:
                     urlAction = "outputCurrency"
                     isToBuy = True
 
-                elif percentageDiff >= self.sellTrigger and row[self.idDesc] in self.csvSymbolsNotSold: # sell
+                elif ((self.tradingType == 0 and percentageDiff >= self.sellTrigger) or self.tradingType != 0) and row[self.bscContractDesc] in self.csvSymbolsNotSold: # sell
 
                     color = bcolors.OK
                     HTMLcolor = "green"
@@ -603,7 +626,7 @@ class cmc:
         self.dfCsvSymbolsNotSold = df[(df[self.isTradingDesc] == boolToInt(val=self.isTrading)) & (df[self.isSoldDesc] == 0)]
         self.writeTradingHistoryHeaders = False
 
-        self.csvSymbolsNotSold = df[self.idDesc].tolist()
+        self.csvSymbolsNotSold = df[self.bscContractDesc].tolist()
 
 
     def getBscContracts(self, dataDf: pd.DataFrame()):
@@ -616,21 +639,29 @@ class cmc:
 
         df[self.idDesc] = df[self.idDesc].astype(int)
 
-        self.bscContractsIDsCsv = df[self.idDesc].tolist()
-        df = df[df[self.bscContractDesc].notnull()]
+        self.bscContractTokensCsv = df[self.bscContractDesc].tolist()
+        print(self.bscContractTokensCsv)
 
-        print(df)
+        # CoinMarketCap
+        if self.tradingType == 0:
 
-        dataDf = dataDf[
-            (dataDf[self.isActiveDesc] == 1)
-            & (dataDf[self.fullyDilluttedMarketCapDesc] <= 1000000)
-        ]
+            df = df[df[self.bscContractDesc].notnull()]
+            print(df)
 
-        print(dataDf)
+            dataDf = dataDf[
+                (dataDf[self.isActiveDesc] == 1)
+                & (dataDf[self.fullyDilluttedMarketCapDesc] <= 1000000)
+            ]
+            print(dataDf)
 
-        self.bscContractsDf = df.loc[df[self.idDesc].isin(dataDf[self.idDesc]),:]
+            self.bscContractsDf = df.loc[df[self.idDesc].isin(dataDf[self.idDesc]),:]
+        
+        else:
+            self.bscContractsDf = df
 
         print(self.bscContractsDf)
+
+        exit()
 
 
     # Insert token data if not in .csv file already
@@ -1080,6 +1111,64 @@ class cmc:
                 printInfo(f"{self.data[row[self.telegramGroupNameDesc]][self.symbolNameDesc]} --> Antes = {prevPrice} // Ahora = {self.data[row[self.telegramGroupNameDesc]][self.priceDesc]} BNB // Diff = {percentageDiff} %", bcolors.OK)
 
 
+    def tokenFOMOCoreTest(self, telegramDf):
+
+        # For each dataframe row
+        for i, row in telegramDf.iterrows():
+
+            # If "current" values are not set
+            if self.data.get(row[self.idDesc], {self.priceDesc: -1})[self.priceDesc] == -1:
+
+                self.data.setdefault(row[self.idDesc], {})[self.symbolNameDesc] = row[self.symbolNameDesc]
+                self.data[row[self.idDesc]][self.bscContractDesc] = row[self.bscContractDesc]
+
+                self.data[row[self.idDesc]][self.priceDesc] = self.getPancakeSwapPrice(token=row[self.bscContractDesc])
+                self.data[row[self.idDesc]][self.prevPriceDesc] = self.data[row[self.idDesc]][self.priceDesc]
+
+                printInfo(f"{self.data[row[self.idDesc]][self.symbolNameDesc]} = {self.data[row[self.idDesc]][self.priceDesc]} BNB", bcolors.OK)
+                #continue
+
+
+            # If "previous" values are set
+            else:
+
+                prevPrice = self.data[row[self.idDesc]][self.prevPriceDesc]
+                self.data[row[self.idDesc]][self.priceDesc] = self.getPancakeSwapPrice(token=row[self.bscContractDesc])
+
+                if self.data[row[self.idDesc]][self.priceDesc] == self.data[row[self.idDesc]][self.prevPriceDesc]:
+                    continue
+
+                if self.data[row[self.idDesc]][self.priceDesc] != 0 and self.data[row[self.idDesc]][self.prevPriceDesc] == 0:
+                    printInfo(f"La oportunidad de ORO!!!! {self.data[row[self.idDesc]][self.symbolNameDesc]} --> {self.data[row[self.idDesc]][self.prevPriceDesc]} // {self.data[row[self.idDesc]][self.priceDesc]} BNB", bcolors.OKMSG)
+                    self.data[row[self.idDesc]][self.prevPriceDesc] = self.data[row[self.idDesc]][self.priceDesc]
+                    continue
+
+                if self.data[row[self.idDesc]][self.prevPriceDesc] == 0:
+                    prevPrice = 1
+                else:
+                    prevPrice = self.data[row[self.idDesc]][self.prevPriceDesc]
+
+                # Calculate diff percentage
+                percengeDiffWoFormat = self.data[row[self.idDesc]][self.priceDesc] / prevPrice
+                percentageDiff = formatPercentages(percengeDiffWoFormat)
+
+                if percentageDiff >= 1000:
+                    color = bcolors.BLUE
+                elif percentageDiff >= 50:
+                    color = bcolors.WARN
+                else:
+                    continue
+
+                # elif percentageDiff >= 0:
+                #     color = bcolors.OK
+                # else:
+                #     color = bcolors.ERR
+
+                printInfo(f"{self.data[row[self.idDesc]][self.symbolNameDesc]} ({self.data[row[self.idDesc]][self.bscContractDesc]})" +
+                f" --> Antes = {prevPrice} // Ahora = {self.data[row[self.idDesc]][self.priceDesc]} BNB // Diff = {percentageDiff} %", color)
+
+
+
     def main(self):
 
         # Update possible contracts
@@ -1109,8 +1198,7 @@ class cmc:
         while True:
 
             if loopsCounter % 100 == 0:
-                telegram.core()
-                telegramDf = telegram.getUpcomingCryptosCsvDf()
+                telegramDf = telegram.getBscContractCsvDf()
                 print(telegramDf)
 
             if loopsCounter % eachLoopsInfo == 0:
@@ -1120,3 +1208,24 @@ class cmc:
 
             loopsCounter += 1
             time.sleep(self.delay)
+
+    def tokenFOMOmainTest(self):
+        tokenFOMO = tokenAndHoneypot.TokenFOMO()
+
+        loopsCounter = 0
+        eachLoopsInfo = 10
+
+        while True:
+
+            if loopsCounter == 0:
+                telegramDf = tokenFOMO.getBscContractCsvDf()
+                print(telegramDf)
+
+            if loopsCounter % eachLoopsInfo == 0:
+                printInfo(f"--- For Loop: {loopsCounter}", bcolors.WARN)
+
+            self.tokenFOMOCoreTest(telegramDf)
+
+            loopsCounter += 1
+            time.sleep(self.delay)
+

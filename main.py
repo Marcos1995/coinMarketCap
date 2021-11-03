@@ -7,10 +7,9 @@ trading = tradingClass.cmc(
     sellTrigger=100,  # %
     isTrading=False,
     sendNotifications=False,
-    tradingHistoryCsv="tradingHistory.csv",
-    bscContractsCsv="bscContracts.csv",
+    tradingType=2,
     maxThreads=5,
     delay=30
 )
 
-trading.telegramMainTest()
+trading.main()

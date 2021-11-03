@@ -51,10 +51,10 @@ def findContractInTelegramMessages(message, pattern):
 
 class telegram:
 
-    def __init__(self):
+    def __init__(self, bscContractCsv):
 
         # Csv file where we save the new cryptos Telegram group name and contract
-        self.newCryptosCsv = "newCryptosBscContracts.csv"
+        self.bscContractCsv = bscContractCsv
 
         # ------------------------------------------------
 
@@ -69,8 +69,8 @@ class telegram:
         self.bscContractDesc = "bscContract"
 
         # Do we need to write headers in the .csv file?
-        if os.path.exists(self.newCryptosCsv):
-            self.newCryptosInCsvDf = pd.read_csv(self.newCryptosCsv)
+        if os.path.exists(self.bscContractCsv):
+            self.newCryptosInCsvDf = pd.read_csv(self.bscContractCsv)
             self.writeNewCryptosCsvHeaders = False
         else:
             self.newCryptosInCsvDf = pd.DataFrame()
@@ -267,11 +267,11 @@ class telegram:
         print(newCryptosToInsert)
 
         # Delete .csv file if exists
-        if os.path.exists(self.newCryptosCsv):
-            os.remove(self.newCryptosCsv)
+        if os.path.exists(self.bscContractCsv):
+            os.remove(self.bscContractCsv)
 
         # Create file and insert data
-        newCryptosToInsert.to_csv(self.newCryptosCsv, index=False, columns=list(newCryptosToInsert), mode="a", header=True)
+        newCryptosToInsert.to_csv(self.bscContractCsv, index=False, columns=list(newCryptosToInsert), mode="a", header=True)
 
 
     # Scrap all Telegram groups in the message
@@ -295,8 +295,8 @@ class telegram:
         return telegramGroups
 
 
-    def getNewCryptosCsvDf(self):
-        return self.newCryptosInCsvDf
+    def getBscContractCsvDf(self):
+        return pd.read_csv(self.bscContractCsv)
 
 
     # ----------------------------------------------------------------------------------------
@@ -306,5 +306,3 @@ class telegram:
     def core(self):
         newCryptos = self.getNewCryptos()
         self.getNewCryptos(groupNamesList=newCryptos)
-
-telegram()

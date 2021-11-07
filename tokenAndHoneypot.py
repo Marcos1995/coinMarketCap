@@ -9,9 +9,10 @@ import os
 
 class TokenFOMO:
 
-    def __init__(self, bscContractCsv):
+    def __init__(self, bscContractCsv, firstN=10):
 
         self.bscContractCsv = bscContractCsv
+        self.firstN = firstN
 
         # id,symbol,symbolName,slug,bscContract
         self.idDesc = "id"
@@ -40,7 +41,7 @@ class TokenFOMO:
         self.core()
 
 
-    def getTokens(self, firstN=10):
+    def getTokens(self):
 
         try:
             r = requests.get(self.tokenFOMOurl, headers=self.headers)
@@ -55,7 +56,7 @@ class TokenFOMO:
             newTokensDf[self.symbolDesc] = newTokensDf[self.symbolDesc].str.replace('[^a-zA-Z0-9]', '', regex=True).str.strip()
             newTokensDf[self.nameDesc] = newTokensDf[self.nameDesc].str.replace('[^a-zA-Z0-9]', '', regex=True).str.strip()
 
-            self.newTokensDf = newTokensDf.iloc[:firstN]
+            self.newTokensDf = newTokensDf.iloc[:self.firstN]
 
         except Exception as e:
             print(e)
@@ -85,7 +86,7 @@ class TokenFOMO:
 
     
     def core(self):
-        self.getTokens(firstN=10)
+        self.getTokens()
         self.dropAndCreateFile()
 
 # a = TokenFOMO()

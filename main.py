@@ -9,7 +9,7 @@ trading = tradingClass.cmc(
     sendNotifications=False,
     tradingType=2,
     maxThreads=5,
-    delay=15
+    delay=30
 )
 
 trading.main()

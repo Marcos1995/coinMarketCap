@@ -431,7 +431,7 @@ class cmc:
 
             # For each dataframe row
             for i, row in dataDf.iterrows():
-                if row[self.idDesc] not in self.bscContractTokensCsv:
+                if row[self.bscContractDesc] not in self.bscContractTokensCsv:
                     # Insert new cryptos in the file
                     self.insertBscContracts(row=row)
                     isDone = False
@@ -454,50 +454,49 @@ class cmc:
         for i, row in self.bscContractsDf.iterrows():
 
             # If "current" values are not set
-            if self.data.get(row[self.idDesc], {self.priceDesc: -1})[self.priceDesc] == -1:
+            if self.data.get(row[self.bscContractDesc], {self.priceDesc: -1})[self.priceDesc] == -1:
 
-                self.data.setdefault(row[self.idDesc], {})[self.symbolNameDesc] = row[self.symbolNameDesc]
-                self.data[row[self.idDesc]][self.symbolDesc] = row[self.symbolDesc]
-                self.data[row[self.idDesc]][self.slugDesc] = row[self.slugDesc]
-                self.data[row[self.idDesc]][self.bscContractDesc] = row[self.bscContractDesc]
+                self.data.setdefault(row[self.bscContractDesc], {})[self.symbolNameDesc] = row[self.symbolNameDesc]
+                self.data[row[self.bscContractDesc]][self.symbolDesc] = row[self.symbolDesc]
+                self.data[row[self.bscContractDesc]][self.slugDesc] = row[self.slugDesc]
 
-                self.data[row[self.idDesc]][self.priceDesc] = self.getPancakeSwapPrice(token=row[self.bscContractDesc])
+                self.data[row[self.bscContractDesc]][self.priceDesc] = self.getPancakeSwapPrice(token=row[self.bscContractDesc])
 
-                printInfo(f"{self.data[row[self.idDesc]][self.symbolNameDesc]} = {self.data[row[self.idDesc]][self.priceDesc]} BNB", bcolors.OK)
+                printInfo(f"{self.data[row[self.bscContractDesc]][self.symbolNameDesc]} = {self.data[row[self.bscContractDesc]][self.priceDesc]} BNB", bcolors.OK)
                 #continue
 
 
             # If "previous" values are set
             else:
                 hasBoughtPrice = False
-                prevPancakeSwapPrice = prevPrice = self.data[row[self.idDesc]][self.priceDesc]
+                prevPancakeSwapPrice = prevPrice = self.data[row[self.bscContractDesc]][self.priceDesc]
 
                 if row[self.bscContractDesc] in self.csvSymbolsNotSold:
-                        prevPrice = float(self.dfCsvSymbolsNotSold[self.dfCsvSymbolsNotSold[self.idDesc] == row[self.idDesc]][self.priceDesc])
+                        prevPrice = float(self.dfCsvSymbolsNotSold[self.dfCsvSymbolsNotSold[self.bscContractDesc] == row[self.bscContractDesc]][self.priceDesc])
                         hasBoughtPrice = True
-                        #printInfo(f"El symbol {self.data[row[self.idDesc]][self.symbolNameDesc]} ya tiene prevPrice que es {prevPrice} BNB", bcolors.OK)
+                        #printInfo(f"El symbol {self.data[row[self.bscContractDesc]][self.symbolNameDesc]} ya tiene prevPrice que es {prevPrice} BNB", bcolors.OK)
 
-                self.data[row[self.idDesc]][self.prevPriceDesc] = prevPrice
-                self.data[row[self.idDesc]][self.priceDesc] = self.getPancakeSwapPrice(token=row[self.bscContractDesc])
+                self.data[row[self.bscContractDesc]][self.prevPriceDesc] = prevPrice
+                self.data[row[self.bscContractDesc]][self.priceDesc] = self.getPancakeSwapPrice(token=row[self.bscContractDesc])
 
                 # If the current price is == 0, skip this crypto for now. Or if the price didn't vary
-                if self.data[row[self.idDesc]][self.priceDesc] == 0 or (hasBoughtPrice and prevPancakeSwapPrice == self.data[row[self.idDesc]][self.priceDesc]):
+                if self.data[row[self.bscContractDesc]][self.priceDesc] == 0 or (hasBoughtPrice and prevPancakeSwapPrice == self.data[row[self.bscContractDesc]][self.priceDesc]):
                     continue
 
                 # If the prev price is 0, assign 0 to the result var price / prevPrice to avoid "Division by 0 error"
-                if self.data[row[self.idDesc]][self.prevPriceDesc] == 0:
-                    printInfo(f"La oportunidad de ORO!!!! {self.data[row[self.idDesc]][self.symbolNameDesc]} --> {self.data[row[self.idDesc]][self.prevPriceDesc]} // {self.data[row[self.idDesc]][self.priceDesc]} BNB", bcolors.OKMSG)
+                if self.data[row[self.bscContractDesc]][self.prevPriceDesc] == 0:
+                    printInfo(f"La oportunidad de ORO!!!! {self.data[row[self.bscContractDesc]][self.symbolNameDesc]} --> {self.data[row[self.bscContractDesc]][self.prevPriceDesc]} // {self.data[row[self.bscContractDesc]][self.priceDesc]} BNB", bcolors.OKMSG)
                     percentageDiffWoFormat = 2
                 else:
                     # Calculate diff percentage
-                    percentageDiffWoFormat = self.data[row[self.idDesc]][self.priceDesc] / self.data[row[self.idDesc]][self.prevPriceDesc]
+                    percentageDiffWoFormat = self.data[row[self.bscContractDesc]][self.priceDesc] / self.data[row[self.bscContractDesc]][self.prevPriceDesc]
                 
                 # Format price vs. prevPrice percentage diff
                 percentageDiff = formatPercentages(percentageDiffWoFormat)
 
                 # Double check to prevent insert info twice
                 if (self.tradingType == 0 and (percentageDiff <= self.buyTrigger or percentageDiff >= self.sellTrigger)) or self.tradingType != 0:
-                    #printInfo(f"Current loop = {currentLoop} || Comprobamos doblemente para saber si realmente hemos de hacer trading de {self.data[row[self.idDesc]][self.symbolDesc]} - {percentageDiff}", bcolors.BLUE)
+                    #printInfo(f"Current loop = {currentLoop} || Comprobamos doblemente para saber si realmente hemos de hacer trading de {self.data[row[self.bscContractDesc]][self.symbolDesc]} - {percentageDiff}", bcolors.BLUE)
                     self.getCsvSymbolsNotSold()
                 else:
                     continue
@@ -510,8 +509,8 @@ class cmc:
                     else:
                         color = bcolors.WARN
 
-                    printInfo(f"{self.data[row[self.idDesc]][self.symbolNameDesc]} ({self.data[row[self.idDesc]][self.bscContractDesc]})" +
-                    f" --> Antes = {prevPrice} // Ahora = {self.data[row[self.idDesc]][self.priceDesc]} BNB // Diff = {percentageDiff} %", color)
+                    printInfo(f"{self.data[row[self.bscContractDesc]][self.symbolNameDesc]} ({row[self.bscContractDesc]})" +
+                    f" --> Antes = {prevPrice} // Ahora = {self.data[row[self.bscContractDesc]][self.priceDesc]} BNB // Diff = {percentageDiff} %", color)
 
                 # If we should buy or sell a crypto
                 if ((self.tradingType == 0 and percentageDiff <= self.buyTrigger) or self.tradingType != 0)\
@@ -523,7 +522,7 @@ class cmc:
                     urlAction = "outputCurrency"
                     isToBuy = True
 
-                elif percentageDiff >= self.sellTrigger and prevPancakeSwapPrice > self.data[row[self.idDesc]][self.priceDesc]\
+                elif percentageDiff >= self.sellTrigger and prevPancakeSwapPrice > self.data[row[self.bscContractDesc]][self.priceDesc]\
                 and row[self.bscContractDesc] in self.csvSymbolsNotSold: # sell
 
                     color = bcolors.OK
@@ -540,16 +539,16 @@ class cmc:
 
                 if self.sendNotifications:
                     self.sendEmails(
-                        tradeAction=tradeAction, urlAction=urlAction, cryptoData=self.data[row[self.idDesc]],
-                        percentageDiff=percentageDiff, color=HTMLcolor, token=self.data[row[self.idDesc]][self.bscContractDesc]
+                        tradeAction=tradeAction, urlAction=urlAction, cryptoData=self.data[row[self.bscContractDesc]],
+                        percentageDiff=percentageDiff, color=HTMLcolor, token=row[self.bscContractDesc]
                     )
 
                 # Trade and send notifications (Emails and WhatsApp)
                 if self.isTrading: # and self.binanceSmartChainDesc in tokens.keys():
                     if isToBuy:
-                        buyURL = self.buyToken(token=self.data[row[self.idDesc]][self.bscContractDesc])
+                        buyURL = self.buyToken(token=row[self.bscContractDesc])
                     else:
-                        sellURLs = self.sellToken(token=self.data[row[self.idDesc]][self.bscContractDesc])
+                        sellURLs = self.sellToken(token=row[self.bscContractDesc])
 
                         if len(sellURLs) == 2:
                             approveSellURL = sellURLs[0]
@@ -568,8 +567,8 @@ class cmc:
 
                     tempRow[self.isSoldDesc] = 0
                     tempRow[self.isTradingDesc] = boolToInt(val=self.isTrading)
-                    tempRow[self.prevPriceDesc] = self.data[row[self.idDesc]][self.prevPriceDesc]
-                    tempRow[self.priceDesc] = self.data[row[self.idDesc]][self.priceDesc]
+                    tempRow[self.prevPriceDesc] = self.data[row[self.bscContractDesc]][self.prevPriceDesc]
+                    tempRow[self.priceDesc] = self.data[row[self.bscContractDesc]][self.priceDesc]
                     tempRow[self.sellPriceDesc] = None
                     tempRow[self.percentageDiffDesc] = percentageDiff
                     tempRow[self.sellPercentageDiffDesc] = None
@@ -613,9 +612,9 @@ class cmc:
                                 writer.writerow(r)
                                 continue
 
-                            if int(r[self.idDesc]) == int(row[self.idDesc]) and int(r[self.isTradingDesc]) == boolToInt(val=self.isTrading) and int(r[self.isSoldDesc]) == 0:
+                            if r[self.bscContractDesc] == row[self.bscContractDesc] and int(r[self.isTradingDesc]) == boolToInt(val=self.isTrading) and int(r[self.isSoldDesc]) == 0:
                                 r[self.isSoldDesc] = 1
-                                r[self.sellPriceDesc] = self.data[row[self.idDesc]][self.priceDesc]
+                                r[self.sellPriceDesc] = self.data[row[self.bscContractDesc]][self.priceDesc]
                                 r[self.sellPercentageDiffDesc] = percentageDiff
                                 r[self.sellDatetimeDesc] = dt.datetime.now()
                                 r[self.approveSellURLDesc] = approveSellURL
@@ -625,12 +624,12 @@ class cmc:
 
                     shutil.move(tempfile.name, self.tradingHistoryCsv)
 
-                #tokens = self.getTokens(cryptoSlug=self.data[row[self.idDesc]][self.slugDesc])
+                #tokens = self.getTokens(cryptoSlug=self.data[row[self.bscContractDesc]][self.slugDesc])
 
-                printInfo(f"CurrentLoop = {currentLoop} || {percentageDiff} % --- {tradeAction} {self.data[row[self.idDesc]][self.symbolNameDesc]} ({self.data[row[self.idDesc]][self.symbolDesc]}"
-                + f" - {row[self.idDesc]}) // Ahora = {self.data[row[self.idDesc]][self.priceDesc]} BNB, Antes = {self.data[row[self.idDesc]][self.prevPriceDesc]} BNB", color)
+                printInfo(f"CurrentLoop = {currentLoop} || {percentageDiff} % --- {tradeAction} {self.data[row[self.bscContractDesc]][self.symbolNameDesc]} ({self.data[row[self.bscContractDesc]][self.symbolDesc]}"
+                + f" - {row[self.bscContractDesc]}) // Ahora = {self.data[row[self.bscContractDesc]][self.priceDesc]} BNB, Antes = {self.data[row[self.bscContractDesc]][self.prevPriceDesc]} BNB", color)
                 
-                printInfo(f"{self.pancakeSwapBaseUrl}inputCurrency={self.data[row[self.idDesc]][self.bscContractDesc]}", color)
+                printInfo(f"{self.pancakeSwapBaseUrl}inputCurrency={row[self.bscContractDesc]}", color)
 
         endDate = dt.datetime.now()
         #printInfo(f"End loop {currentLoop} // Start = {startDate}, End = {endDate} ||| {endDate - startDate}", bcolors.WARN)
@@ -682,7 +681,7 @@ class cmc:
             ]
             print(dataDf)
 
-            self.bscContractsDf = df.loc[df[self.idDesc].isin(dataDf[self.idDesc]),:]
+            self.bscContractsDf = df.loc[df[self.bscContractDesc].isin(dataDf[self.bscContractDesc]),:]
         
         else:
             self.bscContractsDf = df
@@ -1085,9 +1084,9 @@ class cmc:
                         writer.writerow(r)
                         continue
 
-                    if int(r[self.idDesc]) == int(row[self.idDesc]) and int(r[self.isTradingDesc]) == boolToInt(val=self.isTrading) and int(r[self.isSoldDesc]) == 0:
+                    if r[self.bscContractDesc] == row[self.bscContractDesc] and int(r[self.isTradingDesc]) == boolToInt(val=self.isTrading) and int(r[self.isSoldDesc]) == 0:
                         r[self.isSoldDesc] = 1
-                        r[self.sellPriceDesc] = self.data[row[self.idDesc]][self.priceDesc]
+                        r[self.sellPriceDesc] = self.data[row[self.bscContractDesc]][self.priceDesc]
                         r[self.sellPercentageDiffDesc] = 0
                         r[self.sellDatetimeDesc] = dt.datetime.now()
                         r[self.approveSellURLDesc] = approveSellURL
@@ -1098,118 +1097,13 @@ class cmc:
             shutil.move(tempfile.name, self.tradingHistoryCsv)
 
 
-    def telegramCoreTest(self, telegramDf):
-
-        # For each dataframe row
-        for i, row in telegramDf.iterrows():
-
-            # If "current" values are not set
-            if self.data.get(row[self.telegramGroupNameDesc], {self.priceDesc: -1})[self.priceDesc] == -1:
-
-                self.data.setdefault(row[self.telegramGroupNameDesc], {})[self.symbolNameDesc] = row[self.telegramGroupNameDesc]
-                self.data[row[self.telegramGroupNameDesc]][self.contractsDesc] = row[self.contractsDesc]
-
-                self.data[row[self.telegramGroupNameDesc]][self.priceDesc] = self.getPancakeSwapPrice(token=row[self.contractsDesc])
-
-                printInfo(f"{self.data[row[self.telegramGroupNameDesc]][self.symbolNameDesc]} = {self.data[row[self.telegramGroupNameDesc]][self.priceDesc]} BNB", bcolors.OK)
-                #continue
-
-
-            # If "previous" values are set
-            else:
-
-                prevPrice = self.data[row[self.telegramGroupNameDesc]][self.priceDesc]
-
-                self.data[row[self.telegramGroupNameDesc]][self.prevPriceDesc] = prevPrice
-                self.data[row[self.telegramGroupNameDesc]][self.priceDesc] = self.getPancakeSwapPrice(token=row[self.contractsDesc])
-
-                if self.data[row[self.telegramGroupNameDesc]][self.priceDesc] == self.data[row[self.telegramGroupNameDesc]][self.prevPriceDesc]:
-                    continue
-
-                if self.data[row[self.telegramGroupNameDesc]][self.priceDesc] != 0 and self.data[row[self.telegramGroupNameDesc]][self.prevPriceDesc] == 0:
-                    printInfo(f"La oportunidad de ORO!!!! {self.data[row[self.telegramGroupNameDesc]][self.symbolNameDesc]} --> {self.data[row[self.telegramGroupNameDesc]][self.prevPriceDesc]} // {self.data[row[self.telegramGroupNameDesc]][self.priceDesc]} BNB", bcolors.OKMSG)
-                    #continue
-
-                if self.data[row[self.telegramGroupNameDesc]][self.prevPriceDesc] == 0:
-                    prevPrice = 1
-                else:
-                    prevPrice = self.data[row[self.telegramGroupNameDesc]][self.prevPriceDesc]
-
-                # Calculate diff percentage
-                percentageDiffWoFormat = self.data[row[self.telegramGroupNameDesc]][self.priceDesc] / prevPrice
-                percentageDiff = formatPercentages(percentageDiffWoFormat)
-
-                printInfo(f"{self.data[row[self.telegramGroupNameDesc]][self.symbolNameDesc]} --> Antes = {prevPrice} // Ahora = {self.data[row[self.telegramGroupNameDesc]][self.priceDesc]} BNB // Diff = {percentageDiff} %", bcolors.OK)
-
-
-    def tokenFOMOCoreTest(self, telegramDf):
-
-        # For each dataframe row
-        for i, row in telegramDf.iterrows():
-
-            # If "current" values are not set
-            if self.data.get(row[self.idDesc], {self.priceDesc: -1})[self.priceDesc] == -1:
-
-                self.data.setdefault(row[self.idDesc], {})[self.symbolNameDesc] = row[self.symbolNameDesc]
-                self.data[row[self.idDesc]][self.bscContractDesc] = row[self.bscContractDesc]
-
-                self.data[row[self.idDesc]][self.priceDesc] = self.getPancakeSwapPrice(token=row[self.bscContractDesc])
-                self.data[row[self.idDesc]][self.prevPriceDesc] = self.data[row[self.idDesc]][self.priceDesc]
-
-                printInfo(f"{self.data[row[self.idDesc]][self.symbolNameDesc]} = {self.data[row[self.idDesc]][self.priceDesc]} BNB", bcolors.OK)
-                #continue
-
-
-            # If "previous" values are set
-            else:
-
-                prevPrice = self.data[row[self.idDesc]][self.prevPriceDesc]
-                self.data[row[self.idDesc]][self.priceDesc] = self.getPancakeSwapPrice(token=row[self.bscContractDesc])
-
-                if self.data[row[self.idDesc]][self.priceDesc] == self.data[row[self.idDesc]][self.prevPriceDesc]:
-                    continue
-
-                if self.data[row[self.idDesc]][self.priceDesc] != 0 and self.data[row[self.idDesc]][self.prevPriceDesc] == 0:
-                    printInfo(f"La oportunidad de ORO!!!! {self.data[row[self.idDesc]][self.symbolNameDesc]} --> {self.data[row[self.idDesc]][self.prevPriceDesc]} // {self.data[row[self.idDesc]][self.priceDesc]} BNB", bcolors.OKMSG)
-                    self.data[row[self.idDesc]][self.prevPriceDesc] = self.data[row[self.idDesc]][self.priceDesc]
-                    continue
-
-                if self.data[row[self.idDesc]][self.prevPriceDesc] == 0:
-                    prevPrice = 1
-                else:
-                    prevPrice = self.data[row[self.idDesc]][self.prevPriceDesc]
-
-                # Calculate diff percentage
-                percentageDiffWoFormat = self.data[row[self.idDesc]][self.priceDesc] / prevPrice
-                percentageDiff = formatPercentages(percentageDiffWoFormat)
-
-                if percentageDiff >= 1000:
-                    color = bcolors.BLUE
-                elif percentageDiff >= 50:
-                    color = bcolors.WARN
-                else:
-                    continue
-
-                # elif percentageDiff >= 0:
-                #     color = bcolors.OK
-                # else:
-                #     color = bcolors.ERR
-
-                printInfo(f"{self.data[row[self.idDesc]][self.symbolNameDesc]} ({self.data[row[self.idDesc]][self.bscContractDesc]})" +
-                f" --> Antes = {prevPrice} // Ahora = {self.data[row[self.idDesc]][self.priceDesc]} BNB // Diff = {percentageDiff} %", color)
-
-
-
     def main(self):
 
         # Update or sell contracts
-        if self.tradingType == 0:
-            self.getNewBscContracts()
-        else:
-            self.sellEverything()
+        self.getNewBscContracts()
 
-            if os.path.exists(self.tradingHistoryCsv):
-                os.remove(self.tradingHistoryCsv)
+        # if os.path.exists(self.tradingHistoryCsv):
+        #     os.remove(self.tradingHistoryCsv)
 
         loopsCounter = 0
         eachLoopsInfo = 10
@@ -1224,44 +1118,3 @@ class cmc:
                 future = executor.submit(self.core, loopsCounter)
                 loopsCounter += 1
                 time.sleep(self.delay)
-
-
-    def telegramMainTest(self):
-
-        loopsCounter = 0
-        eachLoopsInfo = 10
-
-        while True:
-
-            if loopsCounter % 100 == 0:
-                telegramDf = self.extraClass.getBscContractCsvDf()
-                print(telegramDf)
-
-            if loopsCounter % eachLoopsInfo == 0:
-                printInfo(f"--- For Loop: {loopsCounter}", bcolors.WARN)
-
-            self.telegramCoreTest(telegramDf)
-
-            loopsCounter += 1
-            time.sleep(self.delay)
-
-
-    def tokenFOMOmainTest(self):
-
-        loopsCounter = 0
-        eachLoopsInfo = 10
-
-        while True:
-
-            if loopsCounter == 0:
-                telegramDf = self.extraClass.getBscContractCsvDf()
-                print(telegramDf)
-
-            if loopsCounter % eachLoopsInfo == 0:
-                printInfo(f"--- For Loop: {loopsCounter}", bcolors.WARN)
-
-            self.tokenFOMOCoreTest(telegramDf)
-
-            loopsCounter += 1
-            time.sleep(self.delay)
-

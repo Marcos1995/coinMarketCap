@@ -469,22 +469,23 @@ class cmc:
 
             # If "previous" values are set
             else:
-
+                hasBoughtPrice = False
                 prevPancakeSwapPrice = prevPrice = self.data[row[self.idDesc]][self.priceDesc]
 
                 if row[self.bscContractDesc] in self.csvSymbolsNotSold:
                         prevPrice = float(self.dfCsvSymbolsNotSold[self.dfCsvSymbolsNotSold[self.idDesc] == row[self.idDesc]][self.priceDesc])
+                        hasBoughtPrice = True
                         #printInfo(f"El symbol {self.data[row[self.idDesc]][self.symbolNameDesc]} ya tiene prevPrice que es {prevPrice} BNB", bcolors.OK)
 
                 self.data[row[self.idDesc]][self.prevPriceDesc] = prevPrice
                 self.data[row[self.idDesc]][self.priceDesc] = self.getPancakeSwapPrice(token=row[self.bscContractDesc])
 
-                # If the current price is == 0, skip this crypto for now
-                if self.data[row[self.idDesc]][self.priceDesc] == 0:
+                # If the current price is == 0, skip this crypto for now. Or if the price didn't vary
+                if self.data[row[self.idDesc]][self.priceDesc] == 0 or (hasBoughtPrice and prevPancakeSwapPrice == self.data[row[self.idDesc]][self.priceDesc]):
                     continue
 
                 # If the prev price is 0, assign 0 to the result var price / prevPrice to avoid "Division by 0 error"
-                if self.data[row[self.idDesc]][self.prevPriceDesc] == 0 and self.data[row[self.idDesc]][self.priceDesc] > 0:
+                if self.data[row[self.idDesc]][self.prevPriceDesc] == 0:
                     printInfo(f"La oportunidad de ORO!!!! {self.data[row[self.idDesc]][self.symbolNameDesc]} --> {self.data[row[self.idDesc]][self.prevPriceDesc]} // {self.data[row[self.idDesc]][self.priceDesc]} BNB", bcolors.OKMSG)
                     percentageDiffWoFormat = 2
                 else:

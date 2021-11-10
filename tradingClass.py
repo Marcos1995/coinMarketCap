@@ -648,7 +648,11 @@ class cmc:
 
         df[self.idDesc] = df[self.idDesc].astype(int)
 
-        self.dfCsvSymbolsNotSold = df[(df[self.isTradingDesc] == boolToInt(val=self.isTrading)) & (df[self.isSoldDesc] == 0)]
+        if self.tradingType == 0:
+            df = df[df[self.isSoldDesc] == 0]
+
+        self.dfCsvSymbolsNotSold = df[df[self.isTradingDesc] == boolToInt(val=self.isTrading)]
+
         self.writeTradingHistoryHeaders = False
 
         self.csvSymbolsNotSold = df[self.bscContractDesc].tolist()

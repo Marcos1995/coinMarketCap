@@ -73,12 +73,8 @@ class TokenFOMO:
         finalDf[self.slugDesc] = self.newTokensDf[self.symbolDesc]
         finalDf[self.bscContractDesc] = self.newTokensDf[self.addrDesc]
 
-        print(finalDf)
-
         # Do we need to write headers in the .csv file?
         if os.path.exists(self.bscContractCsv):
-            finalDf = pd.concat([pd.read_csv(self.bscContractCsv), finalDf]).drop_duplicates(subset=[self.bscContractDesc], keep='first')
-            print(finalDf)
             os.remove(self.bscContractCsv)
         
         # Create file and insert data

@@ -96,8 +96,8 @@ def getRealTradingPrice(tx="https://bscscan.com/tx/0x2e75d498f315ff772dfb835e752
     exit()
     """
 
-    #except:
-        #printInfo("Error obteniendo datos en getTokens()", bcolors.ERRMSG)
+    #except Exception as e:
+        #printInfo(f"Error obteniendo datos en getTokens() {e.args}", bcolors.ERRMSG)
         #time.sleep(self.delay)
 
     #return tokens
@@ -105,7 +105,7 @@ def getRealTradingPrice(tx="https://bscscan.com/tx/0x2e75d498f315ff772dfb835e752
 
 class cmc:
 
-    def __init__(self, buyTrigger, sellTrigger, isTrading: bool, sendNotifications: bool, tradingType: int, maxThreads: int, delay):
+    def __init__(self, buyTrigger, sellTrigger, isTrading: bool, bnbAmountToBuy: float, sendNotifications: bool, tradingType: int, maxThreads: int, delay):
 
         # Check parameters
         if not isinstance(buyTrigger, (int, float)):
@@ -118,6 +118,10 @@ class cmc:
 
         elif not isinstance(isTrading, bool):
             printInfo(f"El parametro isTrading ha de ser de tipo bool", bcolors.ERRMSG)
+            exit()
+
+        elif not isinstance(bnbAmountToBuy, (int, float)):
+            printInfo(f"El parametro bnbAmountToBuy ha de ser de tipo int o float", bcolors.ERRMSG)
             exit()
 
         elif not isinstance(sendNotifications, bool):
@@ -143,6 +147,7 @@ class cmc:
         self.buyTrigger = buyTrigger
         self.sellTrigger = sellTrigger
         self.isTrading = isTrading
+        self.bnbAmountToBuy = bnbAmountToBuy
         self.sendNotifications = sendNotifications
 
         # Type of trading
@@ -304,7 +309,6 @@ class cmc:
         self.tokenDecimalsDesc = "tokenDecimals"
 
         # Trading variables!!
-        self.bnbAmountToBuy = 0.01
         self.gas = 350000 # default is 250000
         self.gasPrice = self.web3.toWei('5','gwei') # default is 5
 
@@ -318,12 +322,14 @@ class cmc:
 
         printInfo(f"{self.isTradingDesc} = {self.isTrading}", bcolors.WARN)
 
+        # Print trading variables!!!!
         if self.isTrading:
-            printInfo(f"BNB amount to buy for each crypto = {self.bnbAmountToBuy} BNB", bcolors.WARN)
-
             balance = self.web3.eth.get_balance(self.senderAddress)
             humanReadable = self.web3.fromWei(balance,'ether')
             printInfo(f"Total BNB amount: {humanReadable}", bcolors.WARN)
+            printInfo(f"BNB amount to buy for each crypto = {self.bnbAmountToBuy} BNB", bcolors.WARN)
+            printInfo(f"Gas = {self.gas}", bcolors.WARN)
+            printInfo(f"GasPrice = {self.gasPrice}", bcolors.WARN)
 
         # -----------------------------------------------------------------------------------
 
@@ -350,9 +356,9 @@ class cmc:
             #BNBamountOut = self.pancakeSwapRouter.functions.getAmountsOut(self.tokenAmount, [self.wbnbContract, self.usdtContract]).call()
             bnbPriceInUSDT = 1 # self.web3.fromWei(BNBamountOut[1], "ether")
 
-        except:
+        except Exception as e:
             return 0
-            #printInfo(f"Error calculando el precio en getPancakeSwapPrice()")
+            #printInfo(f"Error calculando el precio en getPancakeSwapPrice() {e.args}", bcolors.ERRMSG)
 
         return float(bnbPriceInUSDT * tokenPriceInBNB)
 
@@ -362,7 +368,7 @@ class cmc:
         try:
             tokenRouter = self.web3.eth.contract(address=token, abi=self.tokenAbi)
             tokenDecimals = tokenRouter.functions.decimals().call()
-        except:
+        except Exception as e:
             tokenDecimals = 100
 
         return tokenDecimals
@@ -403,8 +409,8 @@ class cmc:
                 else:
                     time.sleep(5)
 
-            except:
-                printInfo("Error obteniendo datos en getAddressAbi()", bcolors.ERRMSG)
+            except Exception as e:
+                printInfo(f"Error obteniendo datos en getAddressAbi() {e.args}", bcolors.ERRMSG)
                 time.sleep(self.delay)
 
         return abi
@@ -502,12 +508,14 @@ class cmc:
                     continue
 
                 # Print to see the progress
-                if self.tradingType != 0 and percentageDiff >= 50:
+                if self.tradingType != 0:
 
                     if percentageDiff >= 1000:
                         color = bcolors.BLUE
-                    else:
+                    elif percentageDiff >= 50:
                         color = bcolors.WARN
+                    else:
+                        color = ""
 
                     printInfo(f"{self.data[row[self.bscContractDesc]][self.symbolNameDesc]} ({row[self.bscContractDesc]})" +
                     f" --> Antes = {prevPrice} // Ahora = {self.data[row[self.bscContractDesc]][self.priceDesc]} BNB // Diff = {percentageDiff} %", color)
@@ -545,6 +553,7 @@ class cmc:
 
                 # Trade and send notifications (Emails and WhatsApp)
                 if self.isTrading: # and self.binanceSmartChainDesc in tokens.keys():
+                    printInfo(row[self.bscContractDesc], bcolors.OKMSG)
                     if isToBuy:
                         buyURL = self.buyToken(token=row[self.bscContractDesc])
                     else:
@@ -756,8 +765,8 @@ class cmc:
 
                             #print(len(df[df[self.priceDesc] <= 1]))
 
-            except:
-                printInfo("Error obteniendo datos en getData()", bcolors.ERRMSG)
+            except Exception as e:
+                printInfo(f"Error obteniendo datos en getData() {e.args}", bcolors.ERRMSG)
                 
             if len(dataDf) == 0:
                 printInfo("No se han obtenido datos en getData()", bcolors.ERRMSG)
@@ -774,8 +783,8 @@ class cmc:
             service = smtplib.SMTP_SSL(self.smtp_server_domain_name, self.port, context=ssl_context)
             service.login(self.sender_mail, self.password)
 
-        except:
-            printInfo("Error en sendEmails()", bcolors.ERRMSG)
+        except Exception as e:
+            printInfo(f"Error en sendEmails() {e.args}", bcolors.ERRMSG)
             time.sleep(self.delay)
 
         # Set email subject
@@ -838,8 +847,8 @@ class cmc:
             try:
                 result = service.sendmail(self.sender_mail, email, f"Subject: {subject}\n{emailContent}")
 
-            except:
-                printInfo("Error enviando email en sendEmails()", bcolors.ERRMSG)
+            except Exception as e:
+                printInfo(f"Error enviando email en sendEmails() {e.args}", bcolors.ERRMSG)
                 time.sleep(self.delay)
 
         service.quit()
@@ -888,8 +897,8 @@ class cmc:
 
                 break
 
-            except:
-                printInfo("Error obteniendo datos en getTokens()", bcolors.ERRMSG)
+            except Exception as e:
+                printInfo(f"Error obteniendo datos en getTokens() {e.args}", bcolors.ERRMSG)
                 time.sleep(self.delay)
 
         return tokens
@@ -911,8 +920,8 @@ class cmc:
             
                 #printInfo(f"WhatsApp message: {message.sid}", bcolors.OK)
 
-        except:
-            printInfo(f"No se ha/n podido enviar mensaje/s de WhatsApp", bcolors.ERRMSG)
+        except Exception as e:
+            printInfo(f"No se ha/n podido enviar mensaje/s de WhatsApp {e.args}", bcolors.ERRMSG)
 
 
     def buyToken(self, token):
@@ -952,11 +961,13 @@ class cmc:
 
             printInfo(f"Compra realizada! Transacción --> {self.bscscanTransactionBaseUrl}{self.web3.toHex(tx_token)}", bcolors.OKMSG)
 
-        except:
-            printInfo("Error en buyToken()", bcolors.ERRMSG)
-            time.sleep(self.delay)
+            buyURL = self.bscscanTransactionBaseUrl + self.web3.toHex(tx_token)
 
-        return self.bscscanTransactionBaseUrl + self.web3.toHex(tx_token)
+        except Exception as e:
+            printInfo(f"Error en buyToken() {e.args}", bcolors.ERRMSG)
+            buyURL = None
+
+        return buyURL
 
 
     def sellToken(self, token):
@@ -1039,8 +1050,8 @@ class cmc:
 
             sellURLs.append(self.bscscanTransactionBaseUrl + self.web3.toHex(sell_tx_token))
 
-        except:
-            printInfo("Error en sellToken()", bcolors.ERRMSG)
+        except Exception as e:
+            printInfo(f"Error en sellToken() {e.args}", bcolors.ERRMSG)
             time.sleep(self.delay)
 
         return sellURLs

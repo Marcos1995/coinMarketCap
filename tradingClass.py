@@ -553,11 +553,14 @@ class cmc:
 
                 # Trade and send notifications (Emails and WhatsApp)
                 if self.isTrading: # and self.binanceSmartChainDesc in tokens.keys():
+
                     printInfo(row[self.bscContractDesc], bcolors.OKMSG)
                     if isToBuy:
                         buyURL = self.buyToken(token=row[self.bscContractDesc])
                     else:
                         sellURLs = self.sellToken(token=row[self.bscContractDesc])
+
+                        time.sleep(5)
 
                         if len(sellURLs) == 2:
                             approveSellURL = sellURLs[0]

@@ -15,111 +15,159 @@ class db:
     # This function creates the database and the tables if they don't exist
     def createDatabaseStructureIfNotExists(self):
 
+        # Creating table as per requirement
+        query = """
+            CREATE TABLE IF NOT EXISTS 'dimChains' (
+                'id'	            INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT UNIQUE,
+                'description'	    TEXT NOT NULL UNIQUE,
+                'isActive'	        boolean NOT NULL DEFAULT 0,
+                'insertDatetime'	datetime DEFAULT current_timestamp
+            );
+        """
+
+        self.executeQuery(query)
+
+        query = """
+            CREATE TABLE IF NOT EXISTS 'dimTypes' (
+                'id'	            INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT UNIQUE,
+                'description'	    TEXT NOT NULL UNIQUE,
+                'insertDatetime'	datetime DEFAULT current_timestamp
+            );
+        """
+
+        self.executeQuery(query)
+
+        query = """
+            CREATE TABLE IF NOT EXISTS 'dimCryptos' (
+                'id'	            INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT UNIQUE,
+                'symbol'	        TEXT,
+                'symbolName'        TEXT,
+                'slug'              TEXT,
+                'contract'	        TEXT NOT NULL UNIQUE,
+                'FK_typeId'	        INTEGER,
+                'FK_chainId'	    INTEGER,
+                'insertDatetime'	datetime DEFAULT current_timestamp,
+                FOREIGN KEY('FK_typeId')  REFERENCES dimTypes('id'),
+                FOREIGN KEY('FK_chainId') REFERENCES dimChains('id')
+            );
+        """
+
+        self.executeQuery(query)
+
+        query = """
+            CREATE TABLE IF NOT EXISTS tradingHistory (
+                'id'	                INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT UNIQUE,
+                'FK_cryptoId'	        INTEGER NOT NULL,
+                'isSold'	            boolean NOT NULL DEFAULT 0,
+                'isTrading'	            boolean NOT NULL DEFAULT 0,
+                'prevPrice'	            numeric,
+                'price'	                numeric,
+                'sellPrice'	            numeric,
+                'percentageDiff'	    numeric,
+                'sellPercentageDiff'	numeric,
+                'buyDatetime'	        datetime,
+                'sellDatetime'	        datetime,
+                'realBuyPrice'	        numeric,
+                'realSellPrice'	        numeric,
+                'buyURL'	            TEXT,
+                'approveSellURL'	    TEXT,
+                'sellURL'	            TEXT,
+                FOREIGN KEY('FK_cryptoId') REFERENCES dimCryptos('id')
+            );
+        """
+
+        self.executeQuery(query)
+
+
+    # Prepare the pandas DataFrame data to be inserted in a table
+    def prepareInsertInto(self, sourceDf=None, targetTable:str=None):
+
+        # Validations
+        if sourceDf is None:
+            return
+
+        print(sourceDf)
+
+        values = ""
+
+        # Prepare column names to be inserted
+        columnNames = "'" + "', '".join(list(sourceDf)) + "'"
+
+        # For each row, concatenate the values to prepare the INSERT INTO statement
+        for i in range(len(sourceDf)):
+
+            # Split with "," the values to be inserted (mandatory)
+            if i > 0:
+                values += ", "
+
+            # Concatenate values to be inserted from each row
+            rowValues = sourceDf.iloc[i,:].apply(str).values
+            values += "('" + "', '".join(rowValues) + "')"
+
+        # Create query statement
+        query = f"""
+                INSERT INTO {targetTable} ({columnNames})
+                VALUES {values};
+            """
+
+        self.executeQuery(query)
+
+
+    # Execute any query
+    def executeQuery(self, query:str=None):
+        
+        # Validation
+        if query is None:
+            return
+
+        print(query)
+
+        # Verify and assign which type of query is it, commit or not commit one
+        searchfor = ["SELECT"]
+        isToCommitTransaction = any(command not in query for command in searchfor)
+
         try:
 
-            # Connecting to sqlite3 .file
+            # Open connection
             conn = sqlite3.connect(self.dbFileName)
 
-            # Creating a cursor object using the cursor() method
-            cursor = conn.cursor()
+            # INSERT, UPDATE or DELETE statements
+            if isToCommitTransaction:
 
-            # Creating table as per requirement
-            sql = """
-                CREATE TABLE IF NOT EXISTS 'dimChains' (
-                    'id'	            INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT UNIQUE,
-                    'description'	    TEXT NOT NULL UNIQUE,
-                    'isActive'	        boolean NOT NULL DEFAULT 0,
-                    'insertDatetime'	datetime DEFAULT current_timestamp
-                );
-            """
+                # Create cursor
+                cursor = conn.cursor()
 
-            cursor.execute(sql)
+                # Execute query
+                cursor.execute(query)
 
-            sql = """
-                CREATE TABLE IF NOT EXISTS 'dimTypes' (
-                    'id'	            INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT UNIQUE,
-                    'description'	    TEXT NOT NULL UNIQUE,
-                    'insertDatetime'	datetime DEFAULT current_timestamp
-                );
-            """
+                # Commit transaction
+                conn.commit()
+            
+            else: # SELECT statement, returns pandas DataFrame
 
-            cursor.execute(sql)
+                # Execute query
+                cursor = conn.execute(query)
 
-            sql = """
-                CREATE TABLE IF NOT EXISTS 'dimCryptos' (
-                    'id'	            INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT UNIQUE,
-                    'symbol'	        TEXT,
-                    'symbolName'      TEXT,
-                    'slug'            TEXT,
-                    'contract'	    TEXT NOT NULL UNIQUE,
-                    'FK_typeId'	    INTEGER,
-                    'FK_chainId'	    INTEGER,
-                    'insertDatetime'	datetime DEFAULT current_timestamp,
-                    FOREIGN KEY('FK_typeId')  REFERENCES dimTypes('id'),
-                    FOREIGN KEY('FK_chainId') REFERENCES dimChains('id')
-                );
-            """
+                # Fetch all data
+                data = cursor.fetchall()
 
-            cursor.execute(sql)
+                # Get column names in order
+                columnNames = list(map(lambda x: x[0], cursor.description))
 
-            sql = """
-                CREATE TABLE IF NOT EXISTS tradingHistory (
-                    'id'	                INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT UNIQUE,
-                    'FK_cryptoId'	        INTEGER NOT NULL,
-                    'isSold'	            boolean NOT NULL DEFAULT 0,
-                    'isTrading'	            boolean NOT NULL DEFAULT 0,
-                    'prevPrice'	            numeric,
-                    'price'	                numeric,
-                    'sellPrice'	            numeric,
-                    'percentageDiff'	    numeric,
-                    'sellPercentageDiff'	numeric,
-                    'buyDatetime'	        datetime,
-                    'sellDatetime'	        datetime,
-                    'realBuyPrice'	        numeric,
-                    'realSellPrice'	        numeric,
-                    'buyURL'	            TEXT,
-                    'approveSellURL'	    TEXT,
-                    'sellURL'	            TEXT,
-                    FOREIGN KEY('FK_cryptoId') REFERENCES dimCryptos('id')
-                );
-            """
+            # Close conn
+            conn.close()
 
-            cursor.execute(sql)
-
-            # Commit your changes in the database
-            conn.commit()
+            # If we executed a SELECT statement, return a formatted pandas dataFrame
+            if not isToCommitTransaction:
+                return pd.DataFrame(data, columns=columnNames)
 
         except Exception as e:
             print(e)
             exit()
 
-        # Closing the connection
-        conn.close()
-
-
-    # Return pandas dataFrame by given query
-    def getDataframe(self, sql):
-
-        # Open connection
-        conn = sqlite3.connect(self.dbFileName)
-
-        # Get data
-        cursor = conn.execute(sql)
-
-        # Get column names in order
-        columnNames = list(map(lambda x: x[0], cursor.description))
-
-        # Close conn
-        conn.close()
-
-        # Return pandas dataFrame
-        return pd.DataFrame(cursor.fetchall(), columns=columnNames)
 
 
 
-
-
-ob = db(dbFileName='test.db')
-
-        
-print(ob.getDataframe(sql="SELECT * FROM dimChains WHERE isActive = 1"))
+ob = db(dbFileName='test.sqlite')
+df = ob.executeQuery(query="SELECT 'test4' as description, 0 as isActive")
+ob.prepareInsertInto(sourceDf=df, targetTable="dimChains")

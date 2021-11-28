@@ -1,3 +1,6 @@
+import bcolors
+import commonFunctions
+
 import sqlite3
 import pandas as pd
 
@@ -6,13 +9,11 @@ class db:
     def __init__(self, dbFileName: str):
         self.dbFileName = dbFileName
 
-        # This connects to an existing database or creates it if it doesn't exists
-        #self.conn = sqlite3.connect(self.dbFileName)
-
+        # Create database and tables if they doesn't already exists
         self.createDatabaseStructureIfNotExists()
 
 
-    # This function creates the database and the tables if they don't exist
+    # This function creates the database and the tables if they doesn't exist
     def createDatabaseStructureIfNotExists(self):
 
         # Creating table as per requirement
@@ -43,7 +44,24 @@ class db:
                 'symbol'	        TEXT,
                 'symbolName'        TEXT,
                 'slug'              TEXT,
-                'contract'	        TEXT NOT NULL UNIQUE,
+                'contract'	        TEXT NOT NULL,
+                'FK_typeId'	        INTEGER,
+                'FK_chainId'	    INTEGER,
+                'insertDatetime'	datetime DEFAULT current_timestamp,
+                FOREIGN KEY('FK_typeId')  REFERENCES dimTypes('id'),
+                FOREIGN KEY('FK_chainId') REFERENCES dimChains('id')
+            );
+        """
+
+        self.executeQuery(query)
+
+        query = """
+            CREATE TABLE IF NOT EXISTS 'dimCryptosHistory' (
+                'id'	            INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT UNIQUE,
+                'symbol'	        TEXT,
+                'symbolName'        TEXT,
+                'slug'              TEXT,
+                'contract'	        TEXT NOT NULL,
                 'FK_typeId'	        INTEGER,
                 'FK_chainId'	    INTEGER,
                 'insertDatetime'	datetime DEFAULT current_timestamp,
@@ -58,6 +76,7 @@ class db:
             CREATE TABLE IF NOT EXISTS tradingHistory (
                 'id'	                INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT UNIQUE,
                 'FK_cryptoId'	        INTEGER NOT NULL,
+                'contract'	            TEXT NOT NULL,
                 'isSold'	            boolean NOT NULL DEFAULT 0,
                 'isTrading'	            boolean NOT NULL DEFAULT 0,
                 'prevPrice'	            numeric,
@@ -80,13 +99,13 @@ class db:
 
 
     # Prepare the pandas DataFrame data to be inserted in a table
-    def prepareInsertInto(self, sourceDf=None, targetTable:str=None):
+    def prepareInsertInto(self, sourceDf=None, targetTable: str=None):
 
         # Validations
-        if sourceDf is None:
+        if sourceDf is None or targetTable is None:
             return
 
-        print(sourceDf)
+        commonFunctions.printInfo(sourceDf, bcolors.ITALIC)
 
         values = ""
 
@@ -96,7 +115,7 @@ class db:
         # For each row, concatenate the values to prepare the INSERT INTO statement
         for i in range(len(sourceDf)):
 
-            # Split with "," the values to be inserted (mandatory)
+            # Split with ", " the values to be inserted (needed if we want to insert more than 1 row in the same insert condition)
             if i > 0:
                 values += ", "
 
@@ -110,21 +129,22 @@ class db:
                 VALUES {values};
             """
 
+        # Execute the query
         self.executeQuery(query)
 
 
     # Execute any query
-    def executeQuery(self, query:str=None):
+    def executeQuery(self, query: str=None):
         
         # Validation
         if query is None:
             return
 
-        print(query)
+        commonFunctions.printInfo(query, bcolors.WARN)
 
         # Verify and assign which type of query is it, commit or not commit one
-        searchfor = ["SELECT"]
-        isToCommitTransaction = any(command not in query for command in searchfor)
+        keyWords = ["INSERT", "CREATE", "ALTER", "DELETE", "UPDATE"]
+        isToCommitTransaction = any(command in query for command in keyWords)
 
         try:
 
@@ -149,7 +169,7 @@ class db:
                 cursor = conn.execute(query)
 
                 # Fetch all data
-                data = cursor.fetchall()
+                selectedData = cursor.fetchall()
 
                 # Get column names in order
                 columnNames = list(map(lambda x: x[0], cursor.description))
@@ -159,15 +179,16 @@ class db:
 
             # If we executed a SELECT statement, return a formatted pandas dataFrame
             if not isToCommitTransaction:
-                return pd.DataFrame(data, columns=columnNames)
+                return pd.DataFrame(selectedData, columns=columnNames)
 
         except Exception as e:
-            print(e)
+            commonFunctions.printInfo(f"Error en executeQuery() {e}", bcolors.ERRMSG)
+            commonFunctions.printInfo(query, bcolors.FAIL)
             exit()
 
 
 
 
-ob = db(dbFileName='test.sqlite')
+ob = db(dbFileName='trading.sqlite')
 df = ob.executeQuery(query="SELECT 'test4' as description, 0 as isActive")
 ob.prepareInsertInto(sourceDf=df, targetTable="dimChains")

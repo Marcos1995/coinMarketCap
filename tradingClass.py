@@ -1,5 +1,7 @@
+import commonFunctions
+
 import telegramClass
-import tokenAndHoneypot
+import tokenFOMOclass
 
 from numpy import add
 import requests
@@ -26,81 +28,11 @@ import json
 
 # ------------------------------------------------------------------------------------
 
-def formatPercentages(val):
-    return round((val - 1) * 100, 4)
-
-def boolToInt(val):
-    if val == "True" or val == True:
-        res = 1
-    elif val == "False" or val == False:
-        res = 0
-    else:
-        res = -1
-
-    return res
-
-def printInfo(desc, color=""):
-    print(f"{dt.datetime.now()} // {color}{desc}{bcolors.END}")
-
+# Get MM private key (file not included for safety purposes)
 def getPrivateKey():
     with open("/home/pi/Documents/config.txt") as mytxt:
         for line in mytxt:
             return line
-
-def getRealTradingPrice(tx="https://bscscan.com/tx/0x2e75d498f315ff772dfb835e7521f0c67a344d995381229f84b708759a69410c"):
-    
-    from requests_html import HTMLSession
-
-    session = HTMLSession()
-
-    url='https://bscscan.com/tokenholdings'
-    token={'a': '0xFAe2dac0686f0e543704345aEBBe0AEcab4EDA3d'}
-
-    r = session.get(tx)
-    print(r)
-    a = r.html.render(sleep=2)
-    print(a)
-
-    exit()
-
-    resp = requests.get(tx)
-    print(resp)
-    soup = BeautifulSoup(resp.content, 'html.parser')
-    print(soup)
-
-    exit()
-
-    link = "http://www.somesite.com/details.pl?urn=2344"
-
-    f = urllib.request.urlopen(tx, timeout=10)
-    myfile = f.read()
-
-    print(myfile)
-    exit()
-    
-    #while True:
-    printInfo(tx)
-    """
-
-    #try:
-    html_page = urllib.request.urlopen(tx)
-    print(html_page)
-    soup = BeautifulSoup(html_page, "html.parser")
-    print(soup)
-
-    for link in soup.findAll('span'):
-        href = str(link.get('data-original-title'))
-
-        print(href)
-
-    exit()
-    """
-
-    #except Exception as e:
-        #printInfo(f"Error obteniendo datos en getTokens() {e.args}", bcolors.ERRMSG)
-        #time.sleep(self.delay)
-
-    #return tokens
 
 
 class cmc:
@@ -109,39 +41,39 @@ class cmc:
 
         # Check parameters
         if not isinstance(buyTrigger, (int, float)):
-            printInfo(f"El parametro buyTrigger ha de ser de tipo int o float", bcolors.ERRMSG)
+            commonFunctions.printInfo(f"El parametro buyTrigger ha de ser de tipo int o float", bcolors.ERRMSG)
             exit()
 
         elif not isinstance(sellTrigger, (int, float)):
-            printInfo(f"El parametro sellTrigger ha de ser de tipo int o float", bcolors.ERRMSG)
+            commonFunctions.printInfo(f"El parametro sellTrigger ha de ser de tipo int o float", bcolors.ERRMSG)
             exit()
 
         elif not isinstance(isTrading, bool):
-            printInfo(f"El parametro isTrading ha de ser de tipo bool", bcolors.ERRMSG)
+            commonFunctions.printInfo(f"El parametro isTrading ha de ser de tipo bool", bcolors.ERRMSG)
             exit()
 
         elif not isinstance(bnbAmountToBuy, (int, float)):
-            printInfo(f"El parametro bnbAmountToBuy ha de ser de tipo int o float", bcolors.ERRMSG)
+            commonFunctions.printInfo(f"El parametro bnbAmountToBuy ha de ser de tipo int o float", bcolors.ERRMSG)
             exit()
 
         elif not isinstance(sendNotifications, bool):
-            printInfo(f"El parametro sendNotification ha de ser de tipo bool", bcolors.ERRMSG)
+            commonFunctions.printInfo(f"El parametro sendNotification ha de ser de tipo bool", bcolors.ERRMSG)
             exit()
 
         elif not isinstance(tradingType, int):
-            printInfo(f"El parametro tradingType ha de ser de tipo int", bcolors.ERRMSG)
+            commonFunctions.printInfo(f"El parametro tradingType ha de ser de tipo int", bcolors.ERRMSG)
             exit()
 
         elif not isinstance(maxThreads, int):
-            printInfo(f"El parametro maxThreads ha de ser de tipo int", bcolors.ERRMSG)
+            commonFunctions.printInfo(f"El parametro maxThreads ha de ser de tipo int", bcolors.ERRMSG)
             exit()
         
         elif not isinstance(delay, (int, float)):
-            printInfo(f"El parametro delay ha de ser de tipo int o float", bcolors.ERRMSG)
+            commonFunctions.printInfo(f"El parametro delay ha de ser de tipo int o float", bcolors.ERRMSG)
             exit()
 
         # Loading...
-        printInfo(f"Cargando configuraciones...", bcolors.HEADER)
+        commonFunctions.printInfo(f"Cargando configuraciones...", bcolors.HEADER)
 
         # Assign parameters to self values
         self.buyTrigger = buyTrigger
@@ -165,7 +97,7 @@ class cmc:
         else:
             tradingHistoryCsv="tokenFOMOtradingHistory.csv"
             bscContractsCsv="tokenFOMObscContracts.csv"
-            self.extraClass = tokenAndHoneypot.TokenFOMO(bscContractCsv=bscContractsCsv, firstN=10)
+            self.extraClass = tokenFOMOclass.tokenFOMO(bscContractCsv=bscContractsCsv, firstN=10)
 
         self.tradingType = tradingType
         self.tradingHistoryCsv = tradingHistoryCsv
@@ -320,16 +252,18 @@ class cmc:
         self.senderAddress = "0xa9eC6E2129267f01a2E772E208F8b0Ed802748D0"
         self.privateKey = getPrivateKey()
 
-        printInfo(f"{self.isTradingDesc} = {self.isTrading}", bcolors.WARN)
+        commonFunctions.printInfo(f"{self.isTradingDesc} = {self.isTrading}", bcolors.WARN)
+
+        self.isTradingInt = commonFunctions.boolToInt(val=self.isTrading)
 
         # Print trading variables!!!!
         if self.isTrading:
             balance = self.web3.eth.get_balance(self.senderAddress)
             humanReadable = self.web3.fromWei(balance,'ether')
-            printInfo(f"Total BNB amount: {humanReadable}", bcolors.WARN)
-            printInfo(f"BNB amount to buy for each crypto = {self.bnbAmountToBuy} BNB", bcolors.WARN)
-            printInfo(f"Gas = {self.gas}", bcolors.WARN)
-            printInfo(f"GasPrice = {self.gasPrice}", bcolors.WARN)
+            commonFunctions.printInfo(f"Total BNB amount: {humanReadable}", bcolors.WARN)
+            commonFunctions.printInfo(f"BNB amount to buy for each crypto = {self.bnbAmountToBuy} BNB", bcolors.WARN)
+            commonFunctions.printInfo(f"Gas = {self.gas}", bcolors.WARN)
+            commonFunctions.printInfo(f"GasPrice = {self.gasPrice}", bcolors.WARN)
 
         # -----------------------------------------------------------------------------------
 
@@ -358,7 +292,7 @@ class cmc:
 
         except Exception as e:
             return 0
-            #printInfo(f"Error calculando el precio en getPancakeSwapPrice() {e.args}", bcolors.ERRMSG)
+            #commonFunctions.printInfo(f"Error calculando el precio en getPancakeSwapPrice() {e.args}", bcolors.ERRMSG)
 
         return float(bnbPriceInUSDT * tokenPriceInBNB)
 
@@ -410,7 +344,7 @@ class cmc:
                     time.sleep(5)
 
             except Exception as e:
-                printInfo(f"Error obteniendo datos en getAddressAbi() {e.args}", bcolors.ERRMSG)
+                commonFunctions.printInfo(f"Error obteniendo datos en getAddressAbi() {e.args}", bcolors.ERRMSG)
                 time.sleep(self.delay)
 
         return abi
@@ -445,12 +379,12 @@ class cmc:
             if isDone:
                 break
 
-        printInfo(f"Existen {len(self.bscContractTokensCsv)} cryptos en el fichero '{self.bscContractsCsv}'", bcolors.OK)
+        commonFunctions.printInfo(f"Existen {len(self.bscContractTokensCsv)} cryptos en el fichero '{self.bscContractsCsv}'", bcolors.OK)
 
 
     def core(self, currentLoop):
 
-        #printInfo(f"Start Loop {currentLoop}", bcolors.OK)
+        #commonFunctions.printInfo(f"Start Loop {currentLoop}", bcolors.OK)
         startDate = dt.datetime.now()
 
         # Get .csv symbols not sold
@@ -468,7 +402,7 @@ class cmc:
 
                 self.data[row[self.bscContractDesc]][self.priceDesc] = self.getPancakeSwapPrice(token=row[self.bscContractDesc])
 
-                printInfo(f"{self.data[row[self.bscContractDesc]][self.symbolNameDesc]} = {self.data[row[self.bscContractDesc]][self.priceDesc]} BNB", bcolors.OK)
+                commonFunctions.printInfo(f"{self.data[row[self.bscContractDesc]][self.symbolNameDesc]} = {self.data[row[self.bscContractDesc]][self.priceDesc]} BNB", bcolors.OK)
                 #continue
 
 
@@ -480,7 +414,7 @@ class cmc:
                 if row[self.bscContractDesc] in self.csvSymbolsNotSold:
                         prevPrice = float(self.dfCsvSymbolsNotSold[self.dfCsvSymbolsNotSold[self.bscContractDesc] == row[self.bscContractDesc]][self.priceDesc])
                         hasBoughtPrice = True
-                        #printInfo(f"El symbol {self.data[row[self.bscContractDesc]][self.symbolNameDesc]} ya tiene prevPrice que es {prevPrice} BNB", bcolors.OK)
+                        #commonFunctions.printInfo(f"El symbol {self.data[row[self.bscContractDesc]][self.symbolNameDesc]} ya tiene prevPrice que es {prevPrice} BNB", bcolors.OK)
 
                 self.data[row[self.bscContractDesc]][self.prevPriceDesc] = prevPrice
                 self.data[row[self.bscContractDesc]][self.priceDesc] = self.getPancakeSwapPrice(token=row[self.bscContractDesc])
@@ -491,18 +425,18 @@ class cmc:
 
                 # If the prev price is 0, assign 0 to the result var price / prevPrice to avoid "Division by 0 error"
                 if self.data[row[self.bscContractDesc]][self.prevPriceDesc] == 0:
-                    printInfo(f"La oportunidad de ORO!!!! {self.data[row[self.bscContractDesc]][self.symbolNameDesc]} --> {self.data[row[self.bscContractDesc]][self.prevPriceDesc]} // {self.data[row[self.bscContractDesc]][self.priceDesc]} BNB", bcolors.OKMSG)
+                    commonFunctions.printInfo(f"La oportunidad de ORO!!!! {self.data[row[self.bscContractDesc]][self.symbolNameDesc]} --> {self.data[row[self.bscContractDesc]][self.prevPriceDesc]} // {self.data[row[self.bscContractDesc]][self.priceDesc]} BNB", bcolors.OKMSG)
                     percentageDiffWoFormat = 2
                 else:
                     # Calculate diff percentage
                     percentageDiffWoFormat = self.data[row[self.bscContractDesc]][self.priceDesc] / self.data[row[self.bscContractDesc]][self.prevPriceDesc]
                 
                 # Format price vs. prevPrice percentage diff
-                percentageDiff = formatPercentages(percentageDiffWoFormat)
+                percentageDiff = commonFunctions.formatPercentages(percentageDiffWoFormat)
 
                 # Double check to prevent insert info twice
                 if (self.tradingType == 0 and (percentageDiff <= self.buyTrigger or percentageDiff >= self.sellTrigger)) or self.tradingType != 0:
-                    #printInfo(f"Current loop = {currentLoop} || Comprobamos doblemente para saber si realmente hemos de hacer trading de {self.data[row[self.bscContractDesc]][self.symbolDesc]} - {percentageDiff}", bcolors.BLUE)
+                    #commonFunctions.printInfo(f"Current loop = {currentLoop} || Comprobamos doblemente para saber si realmente hemos de hacer trading de {self.data[row[self.bscContractDesc]][self.symbolDesc]} - {percentageDiff}", bcolors.BLUE)
                     self.getCsvSymbolsNotSold()
                 else:
                     continue
@@ -517,7 +451,7 @@ class cmc:
                     else:
                         color = ""
 
-                    printInfo(f"{self.data[row[self.bscContractDesc]][self.symbolNameDesc]} ({row[self.bscContractDesc]})" +
+                    commonFunctions.printInfo(f"{self.data[row[self.bscContractDesc]][self.symbolNameDesc]} ({row[self.bscContractDesc]})" +
                     f" --> Antes = {prevPrice} // Ahora = {self.data[row[self.bscContractDesc]][self.priceDesc]} BNB // Diff = {percentageDiff} %", color)
 
                 # If we should buy or sell a crypto
@@ -554,7 +488,7 @@ class cmc:
                 # Trade and send notifications (Emails and WhatsApp)
                 if self.isTrading: # and self.binanceSmartChainDesc in tokens.keys():
 
-                    printInfo(row[self.bscContractDesc], bcolors.OKMSG)
+                    commonFunctions.printInfo(row[self.bscContractDesc], bcolors.OKMSG)
                     if isToBuy:
                         buyURL = self.buyToken(token=row[self.bscContractDesc])
                     else:
@@ -578,7 +512,7 @@ class cmc:
                         tempRow[x] = y
 
                     tempRow[self.isSoldDesc] = 0
-                    tempRow[self.isTradingDesc] = boolToInt(val=self.isTrading)
+                    tempRow[self.isTradingDesc] = self.isTradingInt
                     tempRow[self.prevPriceDesc] = self.data[row[self.bscContractDesc]][self.prevPriceDesc]
                     tempRow[self.priceDesc] = self.data[row[self.bscContractDesc]][self.priceDesc]
                     tempRow[self.sellPriceDesc] = None
@@ -624,7 +558,7 @@ class cmc:
                                 writer.writerow(r)
                                 continue
 
-                            if r[self.bscContractDesc] == row[self.bscContractDesc] and int(r[self.isTradingDesc]) == boolToInt(val=self.isTrading) and int(r[self.isSoldDesc]) == 0:
+                            if r[self.bscContractDesc] == row[self.bscContractDesc] and int(r[self.isTradingDesc]) == self.isTradingInt and int(r[self.isSoldDesc]) == 0:
                                 r[self.isSoldDesc] = 1
                                 r[self.sellPriceDesc] = self.data[row[self.bscContractDesc]][self.priceDesc]
                                 r[self.sellPercentageDiffDesc] = percentageDiff
@@ -638,13 +572,13 @@ class cmc:
 
                 #tokens = self.getTokens(cryptoSlug=self.data[row[self.bscContractDesc]][self.slugDesc])
 
-                printInfo(f"CurrentLoop = {currentLoop} || {percentageDiff} % --- {tradeAction} {self.data[row[self.bscContractDesc]][self.symbolNameDesc]} ({self.data[row[self.bscContractDesc]][self.symbolDesc]}"
+                commonFunctions.printInfo(f"CurrentLoop = {currentLoop} || {percentageDiff} % --- {tradeAction} {self.data[row[self.bscContractDesc]][self.symbolNameDesc]} ({self.data[row[self.bscContractDesc]][self.symbolDesc]}"
                 + f" - {row[self.bscContractDesc]}) // Ahora = {self.data[row[self.bscContractDesc]][self.priceDesc]} BNB, Antes = {self.data[row[self.bscContractDesc]][self.prevPriceDesc]} BNB", color)
                 
-                printInfo(f"{self.pancakeSwapBaseUrl}inputCurrency={row[self.bscContractDesc]}", color)
+                commonFunctions.printInfo(f"{self.pancakeSwapBaseUrl}inputCurrency={row[self.bscContractDesc]}", color)
 
         endDate = dt.datetime.now()
-        #printInfo(f"End loop {currentLoop} // Start = {startDate}, End = {endDate} ||| {endDate - startDate}", bcolors.WARN)
+        #commonFunctions.printInfo(f"End loop {currentLoop} // Start = {startDate}, End = {endDate} ||| {endDate - startDate}", bcolors.WARN)
 
         #time.sleep(self.delay)
 
@@ -663,19 +597,19 @@ class cmc:
         if self.tradingType == 0:
             df = df[df[self.isSoldDesc] == 0]
 
-        self.dfCsvSymbolsNotSold = df[df[self.isTradingDesc] == boolToInt(val=self.isTrading)]
+        self.dfCsvSymbolsNotSold = df[df[self.isTradingDesc] == self.isTradingInt]
 
         self.writeTradingHistoryHeaders = False
 
         self.csvSymbolsNotSold = df[self.bscContractDesc].tolist()
 
-        #printInfo(self.csvSymbolsNotSold, bcolors.WARN)
+        #commonFunctions.printInfo(self.csvSymbolsNotSold, bcolors.WARN)
 
 
     def getBscContracts(self, dataDf: pd.DataFrame()):
 
         if self.writeBscContractsHeader:
-            printInfo(f'No existe el fichero "{self.bscContractsCsv}"', bcolors.WARN)
+            commonFunctions.printInfo(f'No existe el fichero "{self.bscContractsCsv}"', bcolors.WARN)
             return
 
         df = pd.read_csv(self.bscContractsCsv, sep=self.separator)
@@ -729,7 +663,7 @@ class cmc:
         output.to_csv(self.bscContractsCsv, index=False, columns=tokenData.keys(), mode="a", header=self.writeBscContractsHeader)
         self.writeBscContractsHeader = False
 
-        printInfo(f"Contract insertado para {row[self.symbolNameDesc]} ({bscContract})", bcolors.OK)
+        commonFunctions.printInfo(f"Contract insertado para {row[self.symbolNameDesc]} ({bscContract})", bcolors.OK)
 
         # Sleep time to prevent blocks
         time.sleep(3)
@@ -769,10 +703,10 @@ class cmc:
                             #print(len(df[df[self.priceDesc] <= 1]))
 
             except Exception as e:
-                printInfo(f"Error obteniendo datos en getData() {e.args}", bcolors.ERRMSG)
+                commonFunctions.printInfo(f"Error obteniendo datos en getData() {e.args}", bcolors.ERRMSG)
                 
             if len(dataDf) == 0:
-                printInfo("No se han obtenido datos en getData()", bcolors.ERRMSG)
+                commonFunctions.printInfo("No se han obtenido datos en getData()", bcolors.ERRMSG)
                 time.sleep(self.delay)
 
         return dataDf
@@ -787,7 +721,7 @@ class cmc:
             service.login(self.sender_mail, self.password)
 
         except Exception as e:
-            printInfo(f"Error en sendEmails() {e.args}", bcolors.ERRMSG)
+            commonFunctions.printInfo(f"Error en sendEmails() {e.args}", bcolors.ERRMSG)
             time.sleep(self.delay)
 
         # Set email subject
@@ -851,7 +785,7 @@ class cmc:
                 result = service.sendmail(self.sender_mail, email, f"Subject: {subject}\n{emailContent}")
 
             except Exception as e:
-                printInfo(f"Error enviando email en sendEmails() {e.args}", bcolors.ERRMSG)
+                commonFunctions.printInfo(f"Error enviando email en sendEmails() {e.args}", bcolors.ERRMSG)
                 time.sleep(self.delay)
 
         service.quit()
@@ -901,7 +835,7 @@ class cmc:
                 break
 
             except Exception as e:
-                printInfo(f"Error obteniendo datos en getTokens() {e.args}", bcolors.ERRMSG)
+                commonFunctions.printInfo(f"Error obteniendo datos en getTokens() {e.args}", bcolors.ERRMSG)
                 time.sleep(self.delay)
 
         return tokens
@@ -921,10 +855,10 @@ class cmc:
                                             to='whatsapp:' + number 
                                         ) 
             
-                #printInfo(f"WhatsApp message: {message.sid}", bcolors.OK)
+                #commonFunctions.printInfo(f"WhatsApp message: {message.sid}", bcolors.OK)
 
         except Exception as e:
-            printInfo(f"No se ha/n podido enviar mensaje/s de WhatsApp {e.args}", bcolors.ERRMSG)
+            commonFunctions.printInfo(f"No se ha/n podido enviar mensaje/s de WhatsApp {e.args}", bcolors.ERRMSG)
 
 
     def buyToken(self, token):
@@ -934,7 +868,7 @@ class cmc:
             balance = self.web3.eth.get_balance(self.senderAddress)
             humanReadable = self.web3.fromWei(balance,'ether')
 
-            printInfo(f"Total BNB amount: {humanReadable}", bcolors.WARN)
+            commonFunctions.printInfo(f"Total BNB amount: {humanReadable}", bcolors.WARN)
             
             #Contract Address of Token we want to buy
             tokenToBuy = self.web3.toChecksumAddress(token)        # web3.toChecksumAddress("0x6615a63c260be84974166a5eddff223ce292cf3d")
@@ -962,12 +896,12 @@ class cmc:
             tx_token = self.web3.eth.send_raw_transaction(signed_txn.rawTransaction)
 
 
-            printInfo(f"Compra realizada! Transacción --> {self.bscscanTransactionBaseUrl}{self.web3.toHex(tx_token)}", bcolors.OKMSG)
+            commonFunctions.printInfo(f"Compra realizada! Transacción --> {self.bscscanTransactionBaseUrl}{self.web3.toHex(tx_token)}", bcolors.OKMSG)
 
             buyURL = self.bscscanTransactionBaseUrl + self.web3.toHex(tx_token)
 
         except Exception as e:
-            printInfo(f"Error en buyToken() {e.args}", bcolors.ERRMSG)
+            commonFunctions.printInfo(f"Error en buyToken() {e.args}", bcolors.ERRMSG)
             buyURL = None
 
         return buyURL
@@ -986,7 +920,7 @@ class cmc:
             balance = self.web3.eth.get_balance(sender_address)
             humanReadable = self.web3.fromWei(balance,'ether')
 
-            printInfo(f"Total BNB amount: {humanReadable}", bcolors.WARN)
+            commonFunctions.printInfo(f"Total BNB amount: {humanReadable}", bcolors.WARN)
             
             #Contract id is the new token we are swaping to
             #contract_id = web3.toChecksumAddress("0xc9849e6fdb743d08faee3e34dd2d1bc69ea11a51")
@@ -1004,10 +938,10 @@ class cmc:
             readable = self.web3.fromWei(balance,'ether')
 
             if int(readable) == 0:
-                printInfo(f"El balance de {symbol} es 0 y no hay nada que vender", bcolors.WARN)
+                commonFunctions.printInfo(f"El balance de {symbol} es 0 y no hay nada que vender", bcolors.WARN)
                 return sellURLs
 
-            printInfo(f"Balance: {readable} {symbol}", bcolors.WARN)
+            commonFunctions.printInfo(f"Balance: {readable} {symbol}", bcolors.WARN)
 
             #Enter amount of token to sell
             tokenValue = self.web3.toWei(readable, 'ether')
@@ -1024,14 +958,14 @@ class cmc:
             signed_txn = self.web3.eth.account.sign_transaction(approve, private_key=self.privateKey)
             sell_approved_tx_token = self.web3.eth.send_raw_transaction(signed_txn.rawTransaction)
 
-            printInfo(f"Venta aprobada --> {self.bscscanTransactionBaseUrl}{self.web3.toHex(sell_approved_tx_token)}", bcolors.OK)
+            commonFunctions.printInfo(f"Venta aprobada --> {self.bscscanTransactionBaseUrl}{self.web3.toHex(sell_approved_tx_token)}", bcolors.OK)
 
             sellURLs.append(self.bscscanTransactionBaseUrl + self.web3.toHex(sell_approved_tx_token))
 
             # Wait after approve 10 seconds before sending transaction
             time.sleep(10)
 
-            printInfo(f"Canjeando {tokenValue2} {symbol} por BNB", bcolors.WARN)
+            commonFunctions.printInfo(f"Canjeando {tokenValue2} {symbol} por BNB", bcolors.WARN)
             # Swaping exact Token for ETH 
 
             pancakeswap2_txn = self.pancakeSwapRouter.functions.swapExactTokensForETHSupportingFeeOnTransferTokens( # swapExactTokensForETH
@@ -1049,12 +983,12 @@ class cmc:
             signed_txn = self.web3.eth.account.sign_transaction(pancakeswap2_txn, private_key=self.privateKey)
             sell_tx_token = self.web3.eth.send_raw_transaction(signed_txn.rawTransaction)
 
-            printInfo(f"Venta realizada para {symbol}! Transacción --> {self.bscscanTransactionBaseUrl}{self.web3.toHex(sell_tx_token)}", bcolors.OKMSG)
+            commonFunctions.printInfo(f"Venta realizada para {symbol}! Transacción --> {self.bscscanTransactionBaseUrl}{self.web3.toHex(sell_tx_token)}", bcolors.OKMSG)
 
             sellURLs.append(self.bscscanTransactionBaseUrl + self.web3.toHex(sell_tx_token))
 
         except Exception as e:
-            printInfo(f"Error en sellToken() {e.args}", bcolors.ERRMSG)
+            commonFunctions.printInfo(f"Error en sellToken() {e.args}", bcolors.ERRMSG)
             time.sleep(self.delay)
 
         return sellURLs
@@ -1065,8 +999,8 @@ class cmc:
         # Update possible contracts
         self.getNewBscContracts()
 
-        if boolToInt(val=self.isTrading) != 1 or self.isTrading != True:
-            printInfo("No se pueden vender las cryptos si no asignamos isTrading = True", bcolors.ERRMSG)
+        if self.isTradingInt != 1 or self.isTrading != True:
+            commonFunctions.printInfo("No se pueden vender las cryptos si no asignamos isTrading = True", bcolors.ERRMSG)
 
             # CoinMarketCap
             if self.tradingType == 0:
@@ -1102,7 +1036,7 @@ class cmc:
                         writer.writerow(r)
                         continue
 
-                    if r[self.bscContractDesc] == row[self.bscContractDesc] and int(r[self.isTradingDesc]) == boolToInt(val=self.isTrading) and int(r[self.isSoldDesc]) == 0:
+                    if r[self.bscContractDesc] == row[self.bscContractDesc] and int(r[self.isTradingDesc]) == self.isTradingInt and int(r[self.isSoldDesc]) == 0:
                         r[self.isSoldDesc] = 1
                         r[self.sellPriceDesc] = self.data[row[self.bscContractDesc]][self.priceDesc]
                         r[self.sellPercentageDiffDesc] = 0
@@ -1131,7 +1065,7 @@ class cmc:
             while True:
 
                 if loopsCounter % eachLoopsInfo == 0:
-                    printInfo(f"--- For Loop: {loopsCounter}", bcolors.WARN)
+                    commonFunctions.printInfo(f"--- For Loop: {loopsCounter}", bcolors.WARN)
 
                 future = executor.submit(self.core, loopsCounter)
                 loopsCounter += 1

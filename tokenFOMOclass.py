@@ -1,4 +1,7 @@
-# importing the requests library
+import commonFunctions
+import sqliteClass
+
+import bcolors
 import requests
 import urllib.request, json
 from bs4 import BeautifulSoup
@@ -7,7 +10,7 @@ import pandas as pd
 import datetime as dt
 import os
 
-class TokenFOMO:
+class tokenFOMO:
 
     def __init__(self, bscContractCsv, firstN=10):
 
@@ -48,7 +51,7 @@ class TokenFOMO:
             if r.status_code == 200:
                 newTokens = json.loads(r.content.decode('utf-8'))
             else:
-                print("No hay datos de la API de tokenFOMO")
+                commonFunctions.printInfo("No hay datos de la API de tokenFOMO", bcolors.ERRMSG)
                 exit()
 
             newTokensDf = pd.DataFrame(newTokens)
@@ -59,7 +62,7 @@ class TokenFOMO:
             self.newTokensDf = newTokensDf.iloc[:self.firstN]
 
         except Exception as e:
-            print(e)
+            commonFunctions.printInfo(e, bcolors.ERRMSG)
             exit()
 
 

@@ -1,3 +1,6 @@
+import commonFunctions
+import sqliteClass
+
 from telethon import TelegramClient, types, sync
 from telethon.tl.functions.messages import GetHistoryRequest
 from telethon.tl.functions.channels import GetFullChannelRequest
@@ -11,9 +14,6 @@ import pandas as pd
 import os
 
 # --------------------------------------------------------------------------------
-
-def printInfo(desc, color=""):
-    print(f"{dt.datetime.now()} // {color}{desc}{bcolors.END}")
 
 def findContractInTelegramMessages(message, pattern):
 
@@ -43,7 +43,7 @@ def findContractInTelegramMessages(message, pattern):
     else:
         color = bcolors.OKMSG
 
-    printInfo(coincidences, color)
+    commonFunctions.printInfo(coincidences, color)
 
     return coincidences
 
@@ -120,7 +120,7 @@ class telegram:
 
                 try:
 
-                    printInfo(group, bcolors.OK)
+                    commonFunctions.printInfo(group, bcolors.OK)
 
                     channel_entity = client.get_entity(group)
 
@@ -133,7 +133,7 @@ class telegram:
 
                     #     pinned_msg_id = channel_info.full_chat.pinned_msg_id
 
-                    #     printInfo(pinned_msg_id)
+                    #     commonFunctions.printInfo(pinned_msg_id)
 
                     # if groupNamesList is None and pinned_msg_id is not None:
                     #     posts = client(GetHistoryRequest(
@@ -159,7 +159,7 @@ class telegram:
                         hash=0
                     ))
 
-                    printInfo(f"posts.messages lenght = {len(posts.messages)}", bcolors.WARN)
+                    commonFunctions.printInfo(f"posts.messages lenght = {len(posts.messages)}", bcolors.WARN)
                     # messages stored in 'posts.messages'
 
                     # We are trying to get all crypto groups
@@ -192,14 +192,14 @@ class telegram:
                         if len(contracts) == 1:
                             newCryptoContracts[group] = contracts[0]
 
-                    printInfo("---------------------------------------------------")
+                    commonFunctions.printInfo("---------------------------------------------------")
 
                 except Exception as e:
-                    printInfo(e, bcolors.ERRMSG)
+                    commonFunctions.printInfo(e, bcolors.ERRMSG)
 
         # Print all valid contracts (if we only found 1 distinct contract in a group) of the Telegram groups
         for g, contract in newCryptoContracts.items():
-            printInfo(f"{g} = {contract}", bcolors.OKMSG)
+            commonFunctions.printInfo(f"{g} = {contract}", bcolors.OKMSG)
 
         # Dict to pd.DataFrame() --> list(df.items()) is required for Python 3.x
         df = pd.DataFrame(list(newCryptoContracts.items()), columns=[self.newTelegramGroupNameDesc, self.bscContractDesc])
@@ -239,7 +239,7 @@ class telegram:
 
         # Don't insert or delete anything if there is not new cryptos to insert
         if len(newCryptosToInsert) == 0:
-            printInfo(f"No hay nuevas cryptos a insertar", bcolors.WARN)
+            commonFunctions.printInfo(f"No hay nuevas cryptos a insertar", bcolors.WARN)
             return
 
         # Create columns to union the data with the .csv later
@@ -277,9 +277,9 @@ class telegram:
     # Scrap all Telegram groups in the message
     def getAllTelegramGroupsByMessage(self, message):
 
-        #printInfo(message)
+        #commonFunctions.printInfo(message)
         #message = message.split("𝗢𝗡𝗚𝗢𝗜𝗡𝗚 𝗪𝗛𝗜𝗧𝗘𝗟𝗜𝗦𝗧:")[0]
-        #printInfo(message)
+        #commonFunctions.printInfo(message)
 
         telegramGroups = []
 
@@ -290,7 +290,7 @@ class telegram:
         # Remove duplicates
         telegramGroups = list(dict.fromkeys(telegramGroups))
 
-        printInfo(telegramGroups)
+        commonFunctions.printInfo(telegramGroups)
 
         return telegramGroups
 

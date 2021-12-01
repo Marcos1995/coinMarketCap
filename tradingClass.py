@@ -30,9 +30,13 @@ import json
 
 # Get MM private key (file not included for safety purposes)
 def getPrivateKey():
-    with open("/home/ubuntu/Documents/Projects/config.txt") as mytxt:
-        for line in mytxt:
-            return line
+    try:
+        with open("/home/ubuntu/Documents/Projects/config.txt") as mytxt:
+            for line in mytxt:
+                return line
+    except Exception as e:
+        commonFunctions.printInfo(f"Error en getPrivateKey() {e}", bcolors.ERRMSG)
+        exit()
 
 
 class cmc:

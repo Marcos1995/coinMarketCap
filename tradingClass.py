@@ -30,7 +30,7 @@ import json
 
 # Get MM private key (file not included for safety purposes)
 def getPrivateKey():
-    with open("/home/pi/Documents/config.txt") as mytxt:
+    with open("/home/ubuntu/Documents/Projects/config.txt") as mytxt:
         for line in mytxt:
             return line
 

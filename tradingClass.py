@@ -1,4 +1,5 @@
 import commonFunctions
+import sqliteClass
 
 import telegramClass
 import tokenFOMOclass
@@ -101,7 +102,7 @@ class cmc:
         else:
             tradingHistoryCsv="tokenFOMOtradingHistory.csv"
             bscContractsCsv="tokenFOMObscContracts.csv"
-            self.extraClass = tokenFOMOclass.tokenFOMO(bscContractCsv=bscContractsCsv, firstN=10)
+            self.extraClass = tokenFOMOclass.tokenFOMO(contractCsv=bscContractsCsv, tradingType=self.tradingType, firstN=10)
 
         self.tradingType = tradingType
         self.tradingHistoryCsv = tradingHistoryCsv
@@ -120,7 +121,7 @@ class cmc:
         self.dfCsvSymbolsNotSold = pd.DataFrame()
         self.writeTradingHistoryHeaders = True
 
-        self.bscContractTokensCsv = []
+        self.contractTokensCsv = []
         self.csvSymbolsNotSold = []
 
         self.cryptoCurrencyListDesc = "cryptoCurrencyList"
@@ -153,6 +154,8 @@ class cmc:
         self.dateAddedDesc = "dateAdded"
         self.columnToExpand = "quotes"
 
+        self.FK_cryptoIdDesc = "FK_cryptoId"
+
         self.selectDataColumns = [
             self.idDesc, self.nameDesc, self.symbolDesc, self.slugDesc, self.circulatingSupplyDesc,
             self.totalSupplyDesc, self.maxSupplyDesc, self.isActiveDesc, self.dateAddedDesc, self.columnToExpand
@@ -168,6 +171,7 @@ class cmc:
         self.percentChange1hDesc = "percentChange1h"
 
         self.datetimeDesc = "datetime"
+        self.buyDatetimeDesc = "buyDatetime"
         self.sellDatetimeDesc = "sellDatetime"
 
         self.buyURLDesc = "buyURL"
@@ -360,7 +364,13 @@ class cmc:
         if self.tradingType == 0:
             dataDf = self.getData()
         else:
-            dataDf = self.extraClass.getBscContractCsvDf()
+            dataDf = sqliteClass.db().executeQuery(f"""
+                SELECT
+                    id, symbol, symbolName, slug, contract
+                FROM dimCryptos
+                WHERE FK_typeId = {self.tradingType}
+                """
+            )
 
         while True:
 
@@ -375,7 +385,7 @@ class cmc:
 
             # For each dataframe row
             for i, row in dataDf.iterrows():
-                if row[self.bscContractDesc] not in self.bscContractTokensCsv:
+                if row[self.bscContractDesc] not in self.contractTokensCsv:
                     # Insert new cryptos in the file
                     self.insertBscContracts(row=row)
                     isDone = False
@@ -383,7 +393,7 @@ class cmc:
             if isDone:
                 break
 
-        commonFunctions.printInfo(f"Existen {len(self.bscContractTokensCsv)} cryptos en el fichero '{self.bscContractsCsv}'", bcolors.OK)
+        commonFunctions.printInfo(f"Existen {len(self.contractTokensCsv)} cryptos en el fichero '{self.bscContractsCsv}'", bcolors.OK)
 
 
     def core(self, currentLoop):
@@ -515,6 +525,8 @@ class cmc:
                     for x, y in row.items():
                         tempRow[x] = y
 
+                    tempRow[self.FK_cryptoIdDesc] = row[self.idDesc]
+                    tempRow[self.bscContractDesc] = row[self.bscContractDesc]
                     tempRow[self.isSoldDesc] = 0
                     tempRow[self.isTradingDesc] = self.isTradingInt
                     tempRow[self.prevPriceDesc] = self.data[row[self.bscContractDesc]][self.prevPriceDesc]
@@ -522,7 +534,7 @@ class cmc:
                     tempRow[self.sellPriceDesc] = None
                     tempRow[self.percentageDiffDesc] = percentageDiff
                     tempRow[self.sellPercentageDiffDesc] = None
-                    tempRow[self.datetimeDesc] = dt.datetime.now()
+                    tempRow[self.buyDatetimeDesc] = dt.datetime.now()
                     tempRow[self.sellDatetimeDesc] = None
                     tempRow[self.realBuyPriceDesc] = None
                     tempRow[self.realSellPriceDesc] = None
@@ -533,8 +545,10 @@ class cmc:
                     # To dataFrame
                     tempDf = pd.DataFrame([tempRow])
 
-                    tempDf.to_csv(self.tradingHistoryCsv, index=False, columns=list(tempDf), mode="a", header=self.writeTradingHistoryHeaders)
-                    self.writeTradingHistoryHeaders = False
+                    sqliteClass.db().insertIntoFromPandasDf(sourceDf=tempDf, targetTable="tradingHistory")
+
+                    # tempDf.to_csv(self.tradingHistoryCsv, index=False, columns=list(tempDf), mode="a", header=self.writeTradingHistoryHeaders)
+                    # self.writeTradingHistoryHeaders = False
 
                 else: # sell
 
@@ -620,8 +634,8 @@ class cmc:
 
         df[self.idDesc] = df[self.idDesc].astype(int)
 
-        self.bscContractTokensCsv = df[self.bscContractDesc].tolist()
-        print(self.bscContractTokensCsv)
+        self.contractTokensCsv = df[self.bscContractDesc].tolist()
+        print(self.contractTokensCsv)
 
         # CoinMarketCap
         if self.tradingType == 0:

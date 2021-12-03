@@ -1,12 +1,12 @@
-import bcolors
 import commonFunctions
 
 import sqlite3
+import bcolors
 import pandas as pd
 
 class db:
 
-    def __init__(self, dbFileName: str):
+    def __init__(self, dbFileName="trading.sqlite"):
         self.dbFileName = dbFileName
 
         # Create database and tables if they doesn't already exists
@@ -99,7 +99,7 @@ class db:
 
 
     # Prepare the pandas DataFrame data to be inserted in a table
-    def prepareInsertInto(self, sourceDf=None, targetTable: str=None):
+    def insertIntoFromPandasDf(self, sourceDf=None, targetTable: str=None):
 
         # Validations
         if sourceDf is None or targetTable is None:
@@ -189,6 +189,6 @@ class db:
 
 
 
-ob = db(dbFileName='trading.sqlite')
-df = ob.executeQuery(query="SELECT 'test4' as description, 0 as isActive")
-ob.prepareInsertInto(sourceDf=df, targetTable="dimChains")
+# ob = db(dbFileName='trading.sqlite')
+# df = ob.executeQuery(query="SELECT 'test4' as description, 0 as isActive")
+# ob.insertIntoFromPandasDf(sourceDf=df, targetTable="dimChains")

@@ -1,3 +1,4 @@
+from typing import final
 import commonFunctions
 import sqliteClass
 
@@ -12,24 +13,32 @@ import os
 
 class tokenFOMO:
 
-    def __init__(self, bscContractCsv, firstN=10):
+    def __init__(self, contractCsv, tradingType=3, firstN=10):
 
-        self.bscContractCsv = bscContractCsv
+        self.contractCsv = contractCsv
+        self.tradingType = tradingType
         self.firstN = firstN
 
-        # id,symbol,symbolName,slug,bscContract
+        # id,symbol,symbolName,slug,contract
         self.idDesc = "id"
         self.symbolDesc = "symbol"
         self.symbolNameDesc = "symbolName"
         self.slugDesc = "slug"
-        self.bscContractDesc = "bscContract"
+        self.contractDesc = "contract"
+        self.FK_typeIdDesc = "FK_typeId"
 
         self.nameDesc = "name"
         self.addrDesc = "addr"
 
+        self.timestampDesc = "timestamp"
+        self.lauchDatetimeDesc = "launchDatetime"
+
+        self.regexNonAlphaNumerical = "[^a-zA-Z0-9]"
+
         # Get data from TokenF0MO
         self.tokenFOMOurl = "https://tokenfomo.io/api/tokens/bsc"
-        self.token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoiX21hcmNvczE5OTUiLCJpYXQiOjE2MzUxMDUzMDAsImV4cCI6MTYzNzY5NzMwMH0.1fq2Ac6ho07hdJU3Uu98F6pnzCUZEyj6MLNR1_DzUdc"
+        self.token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoianRkMDIzIiwiaWF0IjoxNjM4MTUyMTYwLCJleHAiOjE2Mzg3NTY5NjB9.k6nNJCdEtpaP9v1G6o-kJ5FuMuX11kEt6xGyUQAh5Cc"
+        #self.token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoiX21hcmNvczE5OTUiLCJpYXQiOjE2MzUxMDUzMDAsImV4cCI6MTYzNzY5NzMwMH0.1fq2Ac6ho07hdJU3Uu98F6pnzCUZEyj6MLNR1_DzUdc"
 
         self.headers = {
             "Accept": "application/json",
@@ -55,45 +64,48 @@ class tokenFOMO:
                 exit()
 
             newTokensDf = pd.DataFrame(newTokens)
-            newTokensDf["datetime"] = pd.to_datetime(newTokensDf['timestamp'], unit='s') + pd.Timedelta(hours=self.getHoursOffset)
-            newTokensDf[self.symbolDesc] = newTokensDf[self.symbolDesc].str.replace('[^a-zA-Z0-9]', '', regex=True).str.strip()
-            newTokensDf[self.nameDesc] = newTokensDf[self.nameDesc].str.replace('[^a-zA-Z0-9]', '', regex=True).str.strip()
+            newTokensDf[self.lauchDatetimeDesc] = pd.to_datetime(newTokensDf[self.timestampDesc], unit='s') # ADD tinezone time -> + pd.Timedelta(hours=self.getHoursOffset)
+            newTokensDf[self.symbolDesc] = newTokensDf[self.symbolDesc].str.replace(self.regexNonAlphaNumerical, '', regex=True).str.strip()
+            newTokensDf[self.nameDesc] = newTokensDf[self.nameDesc].str.replace(self.regexNonAlphaNumerical, '', regex=True).str.strip()
 
             self.newTokensDf = newTokensDf.iloc[:self.firstN]
+
+            print(self.newTokensDf)
+
+            #exit()
 
         except Exception as e:
             commonFunctions.printInfo(e, bcolors.ERRMSG)
             exit()
 
 
-    def dropAndCreateFile(self):
+    def insertData(self):
 
         finalDf = pd.DataFrame()
 
-        finalDf[self.idDesc] = self.newTokensDf.index
+        #finalDf[self.idDesc] = self.newTokensDf.index
         finalDf[self.symbolDesc] = self.newTokensDf[self.symbolDesc]
         finalDf[self.symbolNameDesc] = self.newTokensDf[self.nameDesc]
         finalDf[self.slugDesc] = self.newTokensDf[self.symbolDesc]
-        finalDf[self.bscContractDesc] = self.newTokensDf[self.addrDesc]
+        finalDf[self.contractDesc] = self.newTokensDf[self.addrDesc]
+        finalDf[self.lauchDatetimeDesc] = self.newTokensDf[self.lauchDatetimeDesc]
+        finalDf[self.FK_typeIdDesc] = self.tradingType
 
-        # Do we need to write headers in the .csv file?
-        if os.path.exists(self.bscContractCsv):
-            os.remove(self.bscContractCsv)
+        sqliteClass.db().insertIntoFromPandasDf(sourceDf=finalDf, targetTable="dimCryptos")
+
+        # # Do we need to write headers in the .csv file?
+        # if os.path.exists(self.contractCsv):
+        #     os.remove(self.contractCsv)
         
-        # Create file and insert data
-        finalDf.to_csv(self.bscContractCsv, index=False, columns=list(finalDf), mode="a", header=True)
-
-
-    def getBscContractCsvDf(self):
-        return pd.read_csv(self.bscContractCsv)
+        # # Create file and insert data
+        # finalDf.to_csv(self.contractCsv, index=False, columns=list(finalDf), mode="a", header=True)
 
     
     def core(self):
         self.getTokens()
-        self.dropAndCreateFile()
+        self.insertData()
 
-# a = TokenFOMO()
-# a.main()
+a = tokenFOMO(contractCsv="")
 
 """
 url = "https://tokenfomo.io/"

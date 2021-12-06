@@ -630,7 +630,15 @@ class cmc:
             commonFunctions.printInfo(f'No existe el fichero "{self.bscContractsCsv}"', bcolors.WARN)
             return
 
-        df = pd.read_csv(self.bscContractsCsv, sep=self.separator)
+        # df = pd.read_csv(self.bscContractsCsv, sep=self.separator)
+
+        df = sqliteClass.db().executeQuery(f"""
+            SELECT
+                id, symbol, symbolName, slug, contract
+            FROM dimCryptos
+            WHERE FK_typeId = {self.tradingType}
+            """
+        )
 
         df[self.idDesc] = df[self.idDesc].astype(int)
 

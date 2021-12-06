@@ -8,7 +8,6 @@ import re
 import datetime as dt
 import bcolors
 import asyncio
-import asyncstdlib
 import time
 import pandas as pd
 import os
@@ -51,10 +50,9 @@ def findContractInTelegramMessages(message, pattern):
 
 class telegram:
 
-    def __init__(self, bscContractCsv):
-
-        # Csv file where we save the new cryptos Telegram group name and contract
+    def __init__(self, bscContractCsv, tradingType=2):
         self.bscContractCsv = bscContractCsv
+        self.tradingType = tradingType
 
         # ------------------------------------------------
 
@@ -67,6 +65,14 @@ class telegram:
         self.symbolNameDesc = "symbolName"
         self.slugDesc = "slug"
         self.bscContractDesc = "bscContract"
+
+        self.newCryptosInCsvDf = sqliteClass.db().executeQuery(f"""
+            SELECT
+                id, symbol, symbolName, slug, contract
+            FROM dimCryptos
+            WHERE FK_typeId = {self.tradingType}
+            """
+        )
 
         # Do we need to write headers in the .csv file?
         if os.path.exists(self.bscContractCsv):
@@ -95,11 +101,6 @@ class telegram:
         self.core()
 
     # --------------------------------------------------------------------------------
-
-    @asyncstdlib.lru_cache()
-    async def get_entity(client, group):
-        return await client.get_entity(group)
-
 
     def getNewCryptos(self, groupNamesList=None):
 
@@ -262,7 +263,7 @@ class telegram:
         print(newCryptosToInsert)
 
         # Select and reorder columns to insert in the .csv
-        newCryptosToInsert = newCryptosToInsert[[self.idDesc, self.symbolDesc, self.symbolNameDesc, self.slugDesc, self.bscContractDesc]]
+        newCryptosToInsert = newCryptosToInsert[[self.symbolDesc, self.symbolNameDesc, self.slugDesc, self.bscContractDesc]]
 
         print(newCryptosToInsert)
 
@@ -293,10 +294,6 @@ class telegram:
         commonFunctions.printInfo(telegramGroups)
 
         return telegramGroups
-
-
-    def getBscContractCsvDf(self):
-        return pd.read_csv(self.bscContractCsv)
 
 
     # ----------------------------------------------------------------------------------------

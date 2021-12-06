@@ -165,6 +165,9 @@ class db:
             
             else: # SELECT statement, returns pandas DataFrame
 
+                # Declare pandas df
+                df = pd.DataFrame()
+
                 # Execute query
                 cursor = conn.execute(query)
 
@@ -174,12 +177,15 @@ class db:
                 # Get column names in order
                 columnNames = list(map(lambda x: x[0], cursor.description))
 
+                # Assign pandas df
+                df = pd.DataFrame(selectedData, columns=columnNames)
+
             # Close conn
             conn.close()
 
             # If we executed a SELECT statement, return a formatted pandas dataFrame
             if not isToCommitTransaction:
-                return pd.DataFrame(selectedData, columns=columnNames)
+                return df
 
         except Exception as e:
             commonFunctions.printInfo(f"Error en executeQuery() {e}", bcolors.ERRMSG)

@@ -50,8 +50,8 @@ def findContractInTelegramMessages(message, pattern):
 
 class telegram:
 
-    def __init__(self, bscContractCsv, tradingType=2):
-        self.bscContractCsv = bscContractCsv
+    def __init__(self, contractCsv, tradingType=2):
+        self.contractCsv = contractCsv
         self.tradingType = tradingType
 
         # ------------------------------------------------
@@ -64,7 +64,7 @@ class telegram:
         self.symbolDesc = "symbol"
         self.symbolNameDesc = "symbolName"
         self.slugDesc = "slug"
-        self.bscContractDesc = "bscContract"
+        self.contractDesc = "contract"
 
         self.newCryptosInCsvDf = sqliteClass.db().executeQuery(f"""
             SELECT
@@ -75,8 +75,8 @@ class telegram:
         )
 
         # Do we need to write headers in the .csv file?
-        if os.path.exists(self.bscContractCsv):
-            self.newCryptosInCsvDf = pd.read_csv(self.bscContractCsv)
+        if os.path.exists(self.contractCsv):
+            self.newCryptosInCsvDf = pd.read_csv(self.contractCsv)
             self.writeNewCryptosCsvHeaders = False
         else:
             self.newCryptosInCsvDf = pd.DataFrame()
@@ -203,7 +203,7 @@ class telegram:
             commonFunctions.printInfo(f"{g} = {contract}", bcolors.OKMSG)
 
         # Dict to pd.DataFrame() --> list(df.items()) is required for Python 3.x
-        df = pd.DataFrame(list(newCryptoContracts.items()), columns=[self.newTelegramGroupNameDesc, self.bscContractDesc])
+        df = pd.DataFrame(list(newCryptoContracts.items()), columns=[self.newTelegramGroupNameDesc, self.contractDesc])
 
         # Check
         print(df)
@@ -212,7 +212,7 @@ class telegram:
         if not self.writeNewCryptosCsvHeaders:
 
             # Full join between the .csv pd.DataFrame() and the one obtained from the Telegram group
-            newCryptosToInsert = self.newCryptosInCsvDf.set_index(self.bscContractDesc).combine_first(df.set_index(self.bscContractDesc)).reset_index()
+            newCryptosToInsert = self.newCryptosInCsvDf.set_index(self.contractDesc).combine_first(df.set_index(self.contractDesc)).reset_index()
 
             print(newCryptosToInsert)
 
@@ -229,7 +229,7 @@ class telegram:
             print(newCryptosToInsert)
 
             # Select the only columns we need
-            newCryptosToInsert = newCryptosToInsert[[self.newTelegramGroupNameDesc, self.bscContractDesc]]
+            newCryptosToInsert = newCryptosToInsert[[self.newTelegramGroupNameDesc, self.contractDesc]]
 
             print(newCryptosToInsert)
 
@@ -254,8 +254,8 @@ class telegram:
 
         print(newCryptosToInsert)
 
-        # Drop duplicates by bscContract column
-        newCryptosToInsert.drop_duplicates(subset=[self.bscContractDesc], inplace=True)
+        # Drop duplicates by contract column
+        newCryptosToInsert.drop_duplicates(subset=[self.contractDesc], inplace=True)
 
         # Reassign index
         newCryptosToInsert[self.idDesc] = newCryptosToInsert.reset_index().index
@@ -263,16 +263,16 @@ class telegram:
         print(newCryptosToInsert)
 
         # Select and reorder columns to insert in the .csv
-        newCryptosToInsert = newCryptosToInsert[[self.symbolDesc, self.symbolNameDesc, self.slugDesc, self.bscContractDesc]]
+        newCryptosToInsert = newCryptosToInsert[[self.symbolDesc, self.symbolNameDesc, self.slugDesc, self.contractDesc]]
 
         print(newCryptosToInsert)
 
         # Delete .csv file if exists
-        if os.path.exists(self.bscContractCsv):
-            os.remove(self.bscContractCsv)
+        if os.path.exists(self.contractCsv):
+            os.remove(self.contractCsv)
 
         # Create file and insert data
-        newCryptosToInsert.to_csv(self.bscContractCsv, index=False, columns=list(newCryptosToInsert), mode="a", header=True)
+        newCryptosToInsert.to_csv(self.contractCsv, index=False, columns=list(newCryptosToInsert), mode="a", header=True)
 
 
     # Scrap all Telegram groups in the message

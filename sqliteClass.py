@@ -1,5 +1,4 @@
 import commonFunctions
-
 import sqlite3
 import bcolors
 import pandas as pd

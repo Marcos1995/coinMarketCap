@@ -105,50 +105,115 @@ class tokenFOMO:
         self.getTokens()
         self.insertData()
 
-a = tokenFOMO(contractCsv="")
+# a = tokenFOMO(contractCsv="")
 
-"""
-url = "https://tokenfomo.io/"
 
-hdr = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.64 Safari/537.11',
-       'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-       'Accept-Charset': 'ISO-8859-1,utf-8;q=0.7,*;q=0.3',
-       'Accept-Encoding': 'none',
-       'Accept-Language': 'en-US,en;q=0.8',
-       'Connection': 'keep-alive'}
+# url = "https://tokenfomo.io/"
 
-req = urllib.request.Request(url=url, headers=hdr)
-print(req)
-html_page = urllib.request.urlopen(req)
-print(html_page.read())
-exit()
-soup = BeautifulSoup(html_page, "html.parser")
+# hdr = {
+# 'User-Agent': 'Mozilla/5.0 (X11; Ubuntu; Linux aarch64; rv:94.0) Gecko/20100101 Firefox/94.0',
+# 'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+# 'Accept-Language': 'en-US,en;q=0.5',
+# 'Accept-Encoding': 'gzip, deflate, br',
+# 'Connection': 'keep-alive',
+# 'Cookie': 'h=58288152257d54ff2b26078b1837aba2933f3a1de801d46ac04815e37a7c744a8663a5ea488eafee545e85ddd69bad7468657b943debd7fe361a73c3a8883fdc0984ecf5538c0189d097d074110ebed58c4374e590fe6c8247bd95d9ff235b05e83ee06176f72c571e1515c52bf651852ff613338fd24e850b75b2a9c749bbe58adbcd7531154cb940106d9012e2ed35702e3736c0a02bf163bebbdb2dd55409580a39f4e708e858b35b4b0c3f6c1c0e213aabc435012d8a7f2b171a7ee9ab6fcfcf97f852467e38003b11eded28e60dcbd768c7c7d88653123dddb30eb0fdfa31c8e7ea81e0b87340f175f20504a2cf2e001371151ad16cb366a13edd36785ffb5cd7a08ecf51bbfc7f5cc3e8ad4128c6632099c42570dcf5d9027de2433d5de8343d6cef4441740f5a4283e7a6f975be39b5da02cc5b26cd3912f01de060217d94e650348dc621a183899094d9606d47f71e7e53928cc4d4b78542617cbac0a28b10dfc1ba6a7aa7fac0dfa2285f802817a4fae48a8ee5bf998813071391e64e8909d7b3c436d1f6a0a2a293b35ff2f2362d349408c2ea120d774bc51745edd1caaa107f4017dbfeae4ef18ee5b93dbcbedc5364bfb1e099c86cd1b370d91139c3fde922b2f071f5bcaa4c50b8c2004b60e09f9b08f5cdb0fff35ce7074b56617cceb30f3c3b011914ebb1b19c2256a0f679ce7ce8b163e048bd5ae1da4f05',
+# 'Upgrade-Insecure-Requests': '1',
+# 'Sec-Fetch-Dest': 'document',
+# 'Sec-Fetch-Mode': 'navigate',
+# 'Sec-Fetch-Site': 'none',
+# 'Sec-Fetch-User': '?1',
+# 'Sec-GPC': '1',
+# 'Pragma': 'no-cache',
+# 'Cache-Control': 'no-cache'
+# }
+# # hdr = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.64 Safari/537.11',
+# #        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+# #        'Accept-Charset': 'ISO-8859-1,utf-8;q=0.7,*;q=0.3',
+# #        'Accept-Encoding': 'none',
+# #        'Accept-Language': 'en-US,en;q=0.8',
+# #        'Connection': 'keep-alive'}
 
-newTokens = json.loads(soup.find("script", id="__NEXT_DATA__").string)
+# req = urllib.request.Request(url=url, headers=hdr)
+# print(req)
+# html_page = urllib.request.urlopen(req)
+# data = html_page.read()[:10]
 
-#print(newTokens)
+# print(data)
 
-c = []
+# data = data.encode('hex', errors='ignore')
+# print(data)
+# exit()
+# contents = data.decode('utf-16', 'ignore')
 
-for i, d in newTokens["props"]["pageProps"]["tokens"].items():
-    c.extend(d)
+# print(contents)
 
-print(len(c))
+# #print(base64.b64decode(data))
 
-df = pd.DataFrame(c)
+# print(type(data))
+# print(len(data))
+# print(ord(str(data)[0]))
+# bytesObj = data
+# string = bytesObj.decode('utf-8')
+# print(string)
+# print(123)
+# exit()
+# # import HTMLSession from requests_html
+# from requests_html import HTMLSession
+ 
+# # create an HTML Session object
+# session = HTMLSession()
+ 
+# # Use the object above to connect to needed webpage
+# resp = session.get(url, headers=hdr)
 
-print(list(df))
+# print(resp)
+ 
+# # Run JavaScript code on webpage
+# print(
+#     resp.html.render()
+# )
 
-df = df[
-    (df["network"] == "BSC")
-    & (df["defunct"] == False)
-    & (df["has_source_code"] == True)
-    & (df["ready"] == True)
-    & (df["source_md5"] is not None)
-]
+# from selenium import webdriver
+# from selenium.webdriver.common.by import By
+# from selenium.webdriver.common.keys import Keys
+# from selenium.webdriver.support.ui import WebDriverWait
+# from selenium.webdriver.support.expected_conditions import presence_of_element_located
 
-for column in df.columns:
-    print(f"{column} // {len(df[column].unique())}")
-    print(df[column].unique())
-    print("-------------------------------------------------------------------")
-"""
+# #This example requires Selenium WebDriver 3.13 or newer
+# with webdriver.Firefox() as driver:
+#     wait = WebDriverWait(driver, 10)
+#     driver.get(url)
+#     #driver.find_element(By.ID, "__NEXT_DATA__")#.send_keys("cheese" + Keys.RETURN)
+#     first_result = wait.until(presence_of_element_located((By.ID, "__NEXT_DATA__")))
+#     print(first_result.get_attribute("textContent"))
+
+
+# soup = BeautifulSoup(html_page, "html.parser")
+
+# newTokens = json.loads(soup.find("script", id="__NEXT_DATA__").string)
+
+# #print(newTokens)
+
+# c = []
+
+# for i, d in newTokens["props"]["pageProps"]["tokens"].items():
+#     c.extend(d)
+
+# print(len(c))
+
+# df = pd.DataFrame(c)
+
+# print(list(df))
+
+# df = df[
+#     (df["network"] == "BSC")
+#     & (df["defunct"] == False)
+#     & (df["has_source_code"] == True)
+#     & (df["ready"] == True)
+#     & (df["source_md5"] is not None)
+# ]
+
+# for column in df.columns:
+#     print(f"{column} // {len(df[column].unique())}")
+#     print(df[column].unique())
+#     print("-------------------------------------------------------------------")

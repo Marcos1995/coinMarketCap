@@ -87,16 +87,18 @@ class cmc:
         self.bnbAmountToBuy = bnbAmountToBuy
         self.sendNotifications = sendNotifications
 
+        self.tradingType = tradingType
+
         # Type of trading
         # 0 = CoinMarketCap cryptos
         # 1 = TelegramGroup cryptos
-        # ELSE = TokenFOMO cryptos (has to be the best one)
+        # ELSE = TokenFOMO cryptos (has to be the best one) 
         
-        if tradingType == 0:
+        if self.tradingType == 0:
             tradingHistoryCsv="coinmarketcapTradingHistory.csv"
             bscContractsCsv="coinmarketcapBscContracts.csv"
             self.extraClass = None
-        elif tradingType == 1:
+        elif self.tradingType == 1:
             tradingHistoryCsv="telegramTradingHistory.csv"
             bscContractsCsv="telegramBscContracts.csv"
             self.extraClass = telegramClass.telegram(contractCsv=bscContractsCsv, tradingType=self.tradingType)
@@ -105,7 +107,6 @@ class cmc:
             bscContractsCsv="tokenFOMObscContracts.csv"
             self.extraClass = tokenFOMOclass.tokenFOMO(contractCsv=bscContractsCsv, tradingType=self.tradingType, firstN=10)
 
-        self.tradingType = tradingType
         self.tradingHistoryCsv = tradingHistoryCsv
         self.bscContractsCsv = bscContractsCsv
 
@@ -1108,8 +1109,15 @@ class cmc:
         # Update possible contracts
         self.getNewBscContracts()
 
+        dataDf = sqliteClass.db().executeQuery(f"""
+            SELECT
+                *
+            FROM vwTransactions
+            """
+        )
+
         # For each dataframe row
-        for i, row in self.bscContractsDf.iterrows():
+        for i, row in dataDf.iterrows():
 
             currentPrice = self.getPancakeSwapPrice(token=row[self.contractDesc])
 
@@ -1117,7 +1125,7 @@ class cmc:
                 currentPrice = 1
 
             # Calculate diff percentage
-            percentageDiffWoFormat = currentPrice / self.data[row[self.contractDesc]][self.priceDesc]
+            percentageDiffWoFormat = currentPrice / row[self.priceDesc]
             # Format price vs. prevPrice percentage diff
             percentageDiff = commonFunctions.formatPercentages(percentageDiffWoFormat)
 
@@ -1128,8 +1136,23 @@ class cmc:
             else:
                 color = ""
 
-            commonFunctions.printInfo(f"{self.data[row[self.contractDesc]][self.symbolNameDesc]} ({row[self.contractDesc]})" +
-            f" --> Antes = {self.data[row[self.contractDesc]][self.priceDesc]} // Ahora = {currentPrice} BNB // Diff = {percentageDiff} %", color)
+            commonFunctions.printInfo(f"{row[self.symbolNameDesc]} ({row[self.contractDesc]})" +
+            f" --> Antes = {row[self.priceDesc]} // Ahora = {currentPrice} BNB // Diff = {percentageDiff} %", color)
+
+
+    def insertDataIntoSQLite(self):
+
+        # df = pd.read_csv("tokenFOMObscContracts.csv", sep=self.separator)
+        # commonFunctions.printInfo(df)
+        # df = df[[self.symbolDesc, self.symbolNameDesc, self.slugDesc, self.contractDesc]]
+        # commonFunctions.printInfo(df)
+        # df["FK_typeId"] = self.tradingType
+        # commonFunctions.printInfo(df)
+
+        exit()
+
+        #sqliteClass.db().insertIntoFromPandasDf(sourceDf=df, targetTable="dimCryptos")
+        #sqliteClass.db().insertIntoFromPandasDf(sourceDf=df, targetTable="tradingHistory")
 
 
     def main(self):

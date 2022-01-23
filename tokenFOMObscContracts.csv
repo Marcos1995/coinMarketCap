@@ -1,4 +1,4 @@
-id,symbol,symbolName,slug,bscContract
+id,symbol,symbolName,slug,contract
 0,CA,CatSanta,CA,0xa069e83a21a3efbbab57dbe122b86f659803f766
 1,CRTX,Cortex,CRTX,0x9733ffeeaf975193d574ac05465048d787eaca31
 2,MANE,METAANIME,MANE,0x3f9931d502cb290b6c51d8c7ebd689d011c47afc

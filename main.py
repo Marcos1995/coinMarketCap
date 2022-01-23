@@ -8,7 +8,7 @@ trading = tradingClass.cmc(
     isTrading=False,
     bnbAmountToBuy=0.01,
     sendNotifications=True,
-    tradingType=2,
+    tradingType=3,
     maxThreads=5,
     delay=30
 )

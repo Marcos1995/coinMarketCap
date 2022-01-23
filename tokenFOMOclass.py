@@ -50,7 +50,7 @@ class tokenFOMO:
         currentTime = dt.datetime.now(dt.timezone.utc).astimezone()
         self.getHoursOffset = int(str(currentTime)[-6:-3])
 
-        self.core()
+        #self.core()
 
 
     def getTokens(self):
